@@ -1,21 +1,19 @@
 import Phaser from 'phaser';
 import { SCENE_KEYS } from '../core/sceneKeys';
-import { THEME } from '../core/theme';
 import { runState } from '../systems/RunState';
 import { drawSceneBackdrop } from '../ui/backdrop';
-import { createTextButton, type TextButton } from '../ui/button';
-import { fitIntoBox, getSceneLayoutMetrics } from '../ui/layout';
+import {
+  createButton,
+  createButtonRow,
+  createPanel,
+  createStatStrip,
+  el
+} from '../ui/domUi';
+import { overlayController, type OverlayViewHandle } from '../ui/overlay';
 import { fadeToScene, playSceneEnter } from '../ui/transitions';
 
-const FEATURE_PANEL_BASE = { width: 980, height: 390 };
-
 export class TitleScene extends Phaser.Scene {
-  private titleText!: Phaser.GameObjects.Text;
-  private featurePanel!: Phaser.GameObjects.Rectangle;
-  private featureLabel!: Phaser.GameObjects.Text;
-  private featureContent!: Phaser.GameObjects.Container;
-  private footerText!: Phaser.GameObjects.Text;
-  private briefingButton!: TextButton;
+  private overlay?: OverlayViewHandle;
 
   constructor() {
     super(SCENE_KEYS.TITLE);
@@ -25,142 +23,128 @@ export class TitleScene extends Phaser.Scene {
     runState.reset();
     runState.setPhase('title');
     drawSceneBackdrop(this);
+    this.drawWorldFraming();
     playSceneEnter(this);
+    this.createOverlay();
 
-    this.titleText = this.add.text(0, 0, 'Triwizard Maze Run', {
-      fontFamily: THEME.fonts.display,
-      fontSize: '78px',
-      color: THEME.css.parchment,
-      stroke: '#3e2c10',
-      strokeThickness: 3
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.overlay?.destroy();
+      this.overlay = undefined;
+    });
+  }
+
+  private createOverlay(): void {
+    this.overlay = overlayController.show(this.scene.key, {
+      layout: 'center',
+      sceneClass: 'scene-title'
     });
 
-    this.featurePanel = this.add
-      .rectangle(0, 0, FEATURE_PANEL_BASE.width, FEATURE_PANEL_BASE.height, THEME.colors.panel, 0.92)
-      .setStrokeStyle(2, THEME.colors.gold, 0.3);
-
-    this.featureLabel = this.add.text(0, 0, 'Trial Overview', {
-      fontFamily: THEME.fonts.body,
-      fontSize: '20px',
-      color: THEME.css.gold,
-      fontStyle: 'bold'
+    const startButton = createButton({
+      label: 'Enter Briefing',
+      onClick: () => fadeToScene(this, SCENE_KEYS.INTRO)
     });
 
-    this.featureContent = this.add.container(0, 0);
-    this.buildFeatureContent();
+    const actionRow = createButtonRow(startButton);
+    const pillars = createStatStrip([
+      { key: 'key', label: 'Phase 1', value: 'Unlock the Egg', accent: 'gold' },
+      { key: 'maze', label: 'Phase 2', value: 'Decode the Maze' },
+      { key: 'timer', label: 'Goal', value: 'Beat Your Time', accent: 'success' }
+    ]);
 
-    this.footerText = this.add.text(
-      0,
-      0,
-      'Timer note: your run begins from the briefing screen, not from this title screen.',
-      {
-        fontFamily: THEME.fonts.body,
-        fontSize: '20px',
-        color: THEME.css.gold,
-        align: 'center'
-      }
+    const featureGrid = el('div', 'ui-card-grid');
+    featureGrid.append(
+      createPanel(
+        { title: 'Recover the Key' },
+        el(
+          'p',
+          'ui-panel__description',
+          'Solve the Golden Egg sequence to earn the keyword that makes the hedge markers readable.'
+        )
+      ),
+      createPanel(
+        { title: 'Decode Under Pressure' },
+        el(
+          'p',
+          'ui-panel__description',
+          'Carry the keyword into the maze, repeat it beneath each clue, and confirm the command before you move.'
+        )
+      ),
+      createPanel(
+        { title: 'Race the Clock' },
+        el(
+          'p',
+          'ui-panel__description',
+          'Hints, wrong decodes, and bad branches all cost time, so the cleanest run wins.'
+        )
+      )
     );
 
-    this.briefingButton = createTextButton(this, 0, 0, 320, 74, 'Enter Briefing', () => {
-      fadeToScene(this, SCENE_KEYS.INTRO);
-    });
+    const heroPanel = createPanel(
+      { className: 'title-hero' },
+      el('div', 'ui-panel__eyebrow', 'Triwizard Tournament Trial'),
+      el('h1', 'ui-hero-title', 'Triwizard Maze Run'),
+      el(
+        'p',
+        'ui-hero-subtitle',
+        'Unlock the Golden Egg, decode the hedge markers, and reach the Cup with the fastest clean line you can manage.'
+      ),
+      pillars.root,
+      featureGrid,
+      el(
+        'p',
+        'ui-note',
+        'The timer begins from the briefing screen, so this title overlay stays purely for orientation and atmosphere.'
+      ),
+      actionRow
+    );
 
-    this.layoutScene();
+    this.overlay.main.append(heroPanel);
+  }
 
-    const resizeHandler = () => this.layoutScene();
+  private drawWorldFraming(): void {
+    const graphics = this.add.graphics();
+    const glow = this.add.ellipse(0, 0, 0, 0, 0xd4b15a, 0.12);
+    const cup = this.add.graphics();
+
+    const redraw = () => {
+      const { width, height } = this.scale;
+
+      graphics.clear();
+      cup.clear();
+
+      graphics.lineStyle(18, 0x214b34, 0.85);
+      graphics.strokeRoundedRect(width * 0.13, height * 0.16, width * 0.46, height * 0.66, 34);
+      graphics.lineStyle(10, 0x214b34, 0.7);
+      graphics.strokeRoundedRect(width * 0.17, height * 0.22, width * 0.38, height * 0.54, 28);
+
+      for (let index = 0; index < 6; index += 1) {
+        const x = width * 0.16 + index * width * 0.075;
+        graphics.fillStyle(0x10291c, 0.5);
+        graphics.fillRoundedRect(x, height * 0.24, width * 0.045, height * 0.5, 18);
+      }
+
+      glow.setPosition(width * 0.36, height * 0.38).setSize(width * 0.16, height * 0.16);
+
+      cup.fillStyle(0xd4b15a, 0.95);
+      cup.fillRoundedRect(width * 0.33, height * 0.32, width * 0.06, height * 0.1, 10);
+      cup.fillTriangle(
+        width * 0.315,
+        height * 0.33,
+        width * 0.405,
+        height * 0.33,
+        width * 0.36,
+        height * 0.22
+      );
+      cup.fillRoundedRect(width * 0.355, height * 0.42, width * 0.01, height * 0.06, 4);
+      cup.fillRoundedRect(width * 0.335, height * 0.48, width * 0.05, height * 0.02, 6);
+    };
+
+    redraw();
+
+    const resizeHandler = () => redraw();
     this.scale.on(Phaser.Scale.Events.RESIZE, resizeHandler);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, resizeHandler);
     });
-  }
-
-  private buildFeatureContent(): void {
-    const pitch = this.add
-      .text(
-        0,
-        -126,
-        'Unlock the Golden Egg, decode the hedge markers, and race the maze cleanly enough to reach the Cup.',
-        {
-          fontFamily: THEME.fonts.body,
-          fontSize: '29px',
-          color: THEME.css.parchment,
-          align: 'center',
-          wordWrap: { width: 760 },
-          lineSpacing: 8
-        }
-      )
-      .setOrigin(0.5);
-
-    const cards = [
-      {
-        x: -300,
-        title: 'Recover the Key',
-        body: 'Solve the Golden Egg sequence and reveal the keyword that unlocks the maze.'
-      },
-      {
-        x: 0,
-        title: 'Decode Fast',
-        body: 'Use the recovered key and the shift helper to turn each marker into a route command.'
-      },
-      {
-        x: 300,
-        title: 'Beat the Clock',
-        body: 'Wrong turns and hints cost time, so the best runs are both correct and efficient.'
-      }
-    ];
-
-    cards.forEach((card) => {
-      const background = this.add
-        .rectangle(card.x, 56, 264, 184, THEME.colors.panelAlt, 0.96)
-        .setStrokeStyle(2, THEME.colors.gold, 0.28);
-      const title = this.add
-        .text(card.x, 0, card.title, {
-          fontFamily: THEME.fonts.display,
-          fontSize: '30px',
-          color: THEME.css.parchment,
-          align: 'center'
-        })
-        .setOrigin(0.5);
-      const body = this.add
-        .text(card.x, 72, card.body, {
-          fontFamily: THEME.fonts.body,
-          fontSize: '19px',
-          color: THEME.css.mist,
-          align: 'center',
-          wordWrap: { width: 220 },
-          lineSpacing: 6
-        })
-        .setOrigin(0.5);
-
-      this.featureContent.add([background, title, body]);
-    });
-
-    this.featureContent.add(pitch);
-  }
-
-  private layoutScene(): void {
-    const metrics = getSceneLayoutMetrics(this);
-    const panelWidth = Math.min(1040, metrics.usableWidth);
-    const panelHeight = Math.min(430, metrics.usableHeight - metrics.headerHeight - 90);
-    const panelY = metrics.contentTop + panelHeight / 2 - 8;
-    const scale = fitIntoBox(
-      FEATURE_PANEL_BASE.width,
-      FEATURE_PANEL_BASE.height,
-      panelWidth - 34,
-      panelHeight - 40,
-      1
-    );
-
-    this.titleText.setPosition(metrics.width / 2, metrics.padding + 22).setOrigin(0.5);
-
-    this.featurePanel.setPosition(metrics.width / 2, panelY).setSize(panelWidth, panelHeight);
-    this.featureLabel.setPosition(metrics.width / 2 - panelWidth / 2 + 18, panelY - panelHeight / 2 + 14);
-    this.featureContent.setPosition(metrics.width / 2, panelY + 6).setScale(scale);
-
-    this.briefingButton.setPosition(metrics.width / 2, metrics.height - metrics.padding - 46);
-    this.footerText
-      .setPosition(metrics.width / 2, panelY + panelHeight / 2 - 28)
-      .setOrigin(0.5)
-      .setWordWrapWidth(Math.min(panelWidth - 70, 820));
   }
 }

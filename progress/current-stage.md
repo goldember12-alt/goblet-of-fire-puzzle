@@ -1,89 +1,93 @@
 # Current Stage
 
-## Review Source Used For This Pass
-- Treated [`edits(2).txt`](../edits(2).txt) as the primary review punch list for this pass.
-- Re-read `AGENTS.md`, every file in `/docs`, `progress/current-stage.md`, the current scene files, shared UI/layout helpers, cipher logic, and rune/artifact data before editing.
+## What Architecture Changed
+- Refactored the project from a Phaser-drawn UI approach into a Phaser world plus shared HTML/CSS overlay architecture.
+- Added a stable app shell in `index.html` with separate layers for:
+  - the Phaser mount container,
+  - and a dedicated DOM overlay root above it.
+- Introduced a reusable overlay controller in `src/ui/overlay.ts` so scenes can mount a known layout instead of hand-building canvas HUDs and button groups.
+- Added reusable DOM UI primitives in `src/ui/domUi.ts` for panels, stat strips, buttons, tutorial cards, and shared content blocks.
+- Reworked `src/ui/layout.ts` so Phaser world layout now respects the sidebar-style overlay footprint on wider desktop windows instead of assuming the whole canvas is available for readable UI.
 
-## Issues Addressed From The Newest Edits File
-- Intro wording and alignment:
-  - removed the clunky `First marker onboarding` phrasing,
-  - changed `solve the artifact` language to `solve the egg`,
-  - tightened the Trial Flow stack so the numbered bubbles and text align more cleanly,
-  - and compressed the Trial Flow layout so the third step no longer relies on overflow-prone spacing.
-- Cipher primer correction:
-  - replaced the contradictory primer example with a mathematically consistent one that matches the actual Vigenere-style implementation,
-  - switched the displayed helper from signed subtraction text to a clearer `Back` row,
-  - and added an explicit `A = 0` note so the shift math is understandable.
-- Persistent HUD overlap:
-  - increased global header/footer reserves in `src/ui/layout.ts`,
-  - rebuilt `RunHud` into a tighter stacked layout,
-  - shortened ledger copy so the phase, timer, key, and meta lines stay inside the HUD panel across scenes.
-- Artifact Chamber layout:
-  - made the egg larger and more central,
-  - pushed Omen Cards farther right and gave the chamber more width,
-  - arranged rune panels around the egg in a more intentional surround layout,
-  - moved selected-fragment and instruction text away from the crowded lower chamber,
-  - and kept the button hit area aligned with the full visible rune card.
-- Rune presentation:
-  - added simple icon identifiers to rune data,
-  - showed each rune as an icon + name + sigil card instead of text-only strips,
-  - and preserved full-panel click targets for every rune fragment.
-- Maze readability:
-  - condensed the Maze Vista panel footprint and gave the cipher workspace more width,
-  - rebuilt the decoder area so labels, columns, helper text, and route controls remain separated,
-  - and resized/repositioned results content so the replay goal no longer crowds the summary content.
-- Guessing reduction:
-  - route plaques no longer expose direct direction labels,
-  - route plaques stay disabled until the player fills the decode row and presses `Confirm Decode`,
-  - incorrect decode submissions now cost time,
-  - and the player must meaningfully use the cipher before route selection becomes available.
-- Maze feel:
-  - replaced the old straight progress-strip feel with a branching chamber preview,
-  - made route choices appear as separate hedge branches with disguised plaques,
-  - and adjusted checkpoint flavor text to frame each stop as a junction rather than a straight hallway.
+## What UI Moved From Phaser To DOM
+- Title screen:
+  - title hero card,
+  - overview cards,
+  - start button,
+  - timer note.
+- Intro screen:
+  - trial flow briefing,
+  - maze primer,
+  - begin/back buttons,
+  - timing note.
+- Mini-puzzle screen:
+  - HUD stats,
+  - key display,
+  - artifact instructions,
+  - selected/alignment status copy,
+  - omen-card modal,
+  - action buttons,
+  - status/footer feedback.
+- Maze screen:
+  - HUD stats,
+  - checkpoint title and flavor copy,
+  - ciphertext panel,
+  - decoder helper rows,
+  - editable decode inputs,
+  - confirm decode control,
+  - route choice buttons,
+  - route feedback.
+- Results screen:
+  - final summary,
+  - stat strip,
+  - split breakdown cards,
+  - replay button.
 
-## Files Changed Most
-- `src/ui/layout.ts`
-- `src/ui/runHud.ts`
-- `src/scenes/IntroScene.ts`
-- `src/scenes/MiniPuzzleScene.ts`
-- `src/scenes/MazeScene.ts`
-- `src/scenes/ResultsScene.ts`
-- `src/data/mazeCheckpoints.ts`
-- `src/puzzles/runeSequencePuzzle.ts`
+## Main Source Of Truth For Overlay UI
+- `src/ui/overlay.ts`
+- `src/ui/domUi.ts`
+- `src/style.css`
+- Scene-to-overlay wiring now lives primarily in:
+  - `src/scenes/TitleScene.ts`
+  - `src/scenes/IntroScene.ts`
+  - `src/scenes/MiniPuzzleScene.ts`
+  - `src/scenes/MazeScene.ts`
+  - `src/scenes/ResultsScene.ts`
 
-## What Was Done To Eliminate Overlap
-- Expanded the shared header and footer safe areas so title stacks, HUD panels, play panels, and footer feedback no longer compete for the same vertical space.
-- Compressed Run Ledger copy into shorter two-line summaries and repositioned the internal text stack to keep it inside the panel.
-- Reflowed intro, mini-puzzle, maze, and results compositions so decorative elements give way to readable text and interaction space.
-- Shifted the egg-chamber selection text out of the crowded lower ring area and kept the Omen Cards/status region in its own smaller right-side panel.
-- Increased the breathing room between maze decoder text, confirmation flow, route plaques, and footer feedback.
+## How Resize And Layout Are Now Handled
+- `index.html` now defines a stable shell with both the Phaser mount and overlay root inside the same bounded parent.
+- Phaser still uses `RESIZE`, but the parent container is now deliberate instead of relying on vague body sizing.
+- CSS owns the readable layout:
+  - desktop uses a sidebar-oriented overlay layout,
+  - narrower windows stack the overlay regions cleanly,
+  - buttons use normal DOM hit areas and focus states,
+  - panel spacing and wrapping come from CSS grid/flex instead of scene coordinate tuning.
+- Phaser world scenes use `getWorldFrame(..., { reserveSidebar: true })` so decorative/world content avoids the main overlay column on larger windows.
 
-## What Was Done To Clarify The Cipher Tutorial
-- Aligned the intro primer with the real implementation in `src/puzzles/mazeCipher.ts`.
-- Replaced the broken `R C M M` example with `E V N P`, which correctly decodes to `L E F T` using the first four letters of `TRIWIZARD`.
-- Clarified that the helper values are backward shifts derived from key letters with `A = 0`.
-- Updated maze tutorial copy so the intended flow is now:
-  - fill the decoder row,
-  - confirm the decode,
-  - then choose the matching branch.
+## What Still Remains Canvas-Based
+- Scene backdrop and atmosphere.
+- Mini-puzzle artifact chamber:
+  - egg,
+  - rune fragments,
+  - pedestals,
+  - direct puzzle interaction.
+- Maze vista:
+  - hedge-branch preview,
+  - branch markers,
+  - chamber/world framing.
+- Decorative scene framing on title, intro, and results.
 
-## What Was Done To Reduce Guessing And Improve Maze Feel
-- Added per-checkpoint `Confirm Decode` gating so route selection is not available before the cipher is actually engaged with.
-- Added a decode-failure time penalty to make brute-force guessing materially worse.
-- Reworked route presentation from obvious directional buttons to disguised route plaques with randomized sigils.
-- Restructured `src/data/mazeCheckpoints.ts` to build checkpoints through `buildMazeRunCheckpoints()`, which now supports per-run randomized disguised route markers.
-- Updated the maze preview to show a branching chamber with multiple plausible exits instead of a simple straight-line progress path.
+## Verification Status
+- `tsc --noEmit` passes when run through the direct Node executable.
+- A full Vite production build could not complete in this environment because `esbuild` failed to spawn with `EPERM`.
+- Browser playtesting is still required for:
+  - final spacing checks,
+  - keyboard focus feel,
+  - decoder usability,
+  - and overall visual integration between the Phaser world and DOM overlay.
 
-## Remaining Unresolved Or Risky Items
-- This shell session does not currently have `node`/`npm` available on PATH, so I could not run `tsc --noEmit` or a local Vite build after the edits. This pass was manually reviewed in-source, but browser verification is still required.
-- The new randomized sigil system is a preparation step and a first implementation, not a final content-rich disguise layer yet.
-- Checkpoint variety beyond cipher solving is still only architectural preparation; no new Goblet-themed checkpoint minigames were added in this pass.
-- Final visual polish, animation balancing, and direct browser playtest tuning are still needed, especially for smaller desktop windows.
-
-## Recommended Next Milestone
-- Run a fresh hands-on browser playtest focused on:
-  - confirming there is no remaining panel/text overlap at common desktop sizes,
-  - validating that the new decode-confirm-route flow meaningfully reduces guessing without feeling tedious,
-  - tuning the egg-chamber and maze typography after real use,
-  - then planning the next checkpoint milestone around richer disguised hints and optional non-cipher checkpoint variety.
+## What Should Be Done Next
+- Run an actual browser playtest across common desktop window sizes.
+- Tune the DOM panel spacing and copy density after a real pass through title, intro, mini-puzzle, maze, and results.
+- Add more visual/world motion so the DOM overlay feels even more integrated with the maze and artifact spaces.
+- Expand checkpoint content and disguised route presentation now that the overlay architecture can handle larger readable puzzle panels cleanly.

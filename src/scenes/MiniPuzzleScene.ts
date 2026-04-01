@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { SCENE_KEYS } from '../core/sceneKeys';
-import { formatPenalty } from '../core/time';
+import { formatDuration, formatPenalty } from '../core/time';
 import { THEME } from '../core/theme';
 import {
   countCorrectPlacements,
@@ -15,9 +15,16 @@ import {
 import { runeSequencePuzzle } from '../puzzles/runeSequencePuzzle';
 import { runState } from '../systems/RunState';
 import { drawSceneBackdrop } from '../ui/backdrop';
-import { createTextButton, type TextButton } from '../ui/button';
-import { fitIntoBox, getSceneLayoutMetrics } from '../ui/layout';
-import { RunHud } from '../ui/runHud';
+import {
+  createButton,
+  createButtonRow,
+  createPanel,
+  createStatStrip,
+  createTutorialBox,
+  el
+} from '../ui/domUi';
+import { fitIntoBox, getWorldFrame } from '../ui/layout';
+import { overlayController, type OverlayViewHandle } from '../ui/overlay';
 import { fadeToScene, playSceneEnter } from '../ui/transitions';
 
 type FragmentButtonView = {
@@ -29,17 +36,13 @@ type FragmentButtonView = {
 
 type SlotView = {
   background: Phaser.GameObjects.Rectangle;
-  slotText: Phaser.GameObjects.Text;
   fragmentText: Phaser.GameObjects.Text;
   lockText: Phaser.GameObjects.Text;
 };
 
-type ClueView = {
-  background: Phaser.GameObjects.Rectangle;
-};
+type StatusTone = 'neutral' | 'success' | 'danger' | 'warning';
 
-const LEFT_PANEL_BASE = { width: 760, height: 700 };
-const RIGHT_PANEL_BASE = { width: 430, height: 620 };
+const WORLD_BASE = { width: 760, height: 620 };
 
 export class MiniPuzzleScene extends Phaser.Scene {
   private readonly puzzle = runeSequencePuzzle;
@@ -47,28 +50,31 @@ export class MiniPuzzleScene extends Phaser.Scene {
   private readonly lockedSlots = new Set<number>();
   private readonly fragmentButtons = new Map<string, FragmentButtonView>();
   private readonly slotViews: SlotView[] = [];
-  private readonly clueViews: ClueView[] = [];
-  private hud!: RunHud;
+  private overlay?: OverlayViewHandle;
+  private worldFrame!: Phaser.GameObjects.Rectangle;
+  private worldContainer!: Phaser.GameObjects.Container;
+  private worldGlow!: Phaser.GameObjects.Ellipse;
   private titleText!: Phaser.GameObjects.Text;
-  private objectiveText!: Phaser.GameObjects.Text;
-  private leftPanel!: Phaser.GameObjects.Rectangle;
-  private leftPanelLabel!: Phaser.GameObjects.Text;
-  private rightPanel!: Phaser.GameObjects.Rectangle;
-  private rightPanelLabel!: Phaser.GameObjects.Text;
-  private leftContent!: Phaser.GameObjects.Container;
-  private rightContent!: Phaser.GameObjects.Container;
-  private keyRevealText!: Phaser.GameObjects.Text;
-  private statusText!: Phaser.GameObjects.Text;
-  private selectedText!: Phaser.GameObjects.Text;
-  private summaryText!: Phaser.GameObjects.Text;
-  private statusCard!: Phaser.GameObjects.Rectangle;
-  private enterMazeButton!: TextButton;
-  private hintButton!: TextButton;
-  private testButton!: TextButton;
-  private resetButton!: TextButton;
   private selectedFragmentId: string | null = null;
   private lastEvaluations: RuleEvaluation[] | null = null;
   private solved = false;
+  private omenCardsOpen = false;
+  private statusTone: StatusTone = 'neutral';
+  private statusMessage = 'Arrange the runes, then test the sequence against the omen cards.';
+  private timerValue?: HTMLDivElement;
+  private attemptsValue?: HTMLDivElement;
+  private hintsValue?: HTMLDivElement;
+  private keyHudValue?: HTMLDivElement;
+  private keyDisplayValue?: HTMLDivElement;
+  private selectedInfo?: HTMLParagraphElement;
+  private summaryInfo?: HTMLParagraphElement;
+  private footerPanel?: HTMLElement;
+  private footerText?: HTMLParagraphElement;
+  private omenButton?: HTMLButtonElement;
+  private hintButton?: HTMLButtonElement;
+  private testButton?: HTMLButtonElement;
+  private resetButton?: HTMLButtonElement;
+  private enterMazeButton?: HTMLButtonElement;
 
   constructor() {
     super(SCENE_KEYS.MINI_PUZZLE);
@@ -82,26 +88,9 @@ export class MiniPuzzleScene extends Phaser.Scene {
     runState.setPhase('mini-puzzle');
     drawSceneBackdrop(this);
     playSceneEnter(this);
-
-    if (runState.hasUnlockedKey() && runState.getSnapshot().keyWord === this.puzzle.keyWord) {
-      this.arrangement = [...this.puzzle.solutionOrder];
-      this.solved = true;
-      this.puzzle.solutionOrder.forEach((_, index) => this.lockedSlots.add(index));
-    } else {
-      this.arrangement = createEmptyArrangement(this.puzzle.solutionOrder.length);
-      this.lockedSlots.clear();
-      this.solved = false;
-    }
-
-    this.hud = new RunHud(this, 'Phase 1: Key Unlock');
-    this.createLayout();
-
-    if (this.solved) {
-      this.lastEvaluations = evaluateArrangement(this.puzzle, this.arrangement);
-      this.setStatusMessage('The egg is already aligned and humming with stored light.', 'success');
-      this.keyRevealText.setText(`Cipher Key Revealed\n${this.puzzle.keyWord}`);
-    }
-
+    this.initializePuzzleState();
+    this.createWorld();
+    this.createOverlay();
     this.layoutScene();
     this.refreshView();
 
@@ -109,165 +98,72 @@ export class MiniPuzzleScene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, resizeHandler);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, resizeHandler);
+      this.overlay?.destroy();
+      this.overlay = undefined;
     });
   }
 
   update(): void {
-    this.hud.refresh();
+    this.refreshHud();
   }
 
-  private createLayout(): void {
-    this.titleText = this.add.text(0, 0, this.puzzle.title, {
-      fontFamily: THEME.fonts.display,
-      fontSize: '50px',
-      color: THEME.css.parchment
-    });
+  private initializePuzzleState(): void {
+    if (runState.hasUnlockedKey() && runState.getSnapshot().keyWord === this.puzzle.keyWord) {
+      this.arrangement = [...this.puzzle.solutionOrder];
+      this.solved = true;
+      this.lastEvaluations = evaluateArrangement(this.puzzle, this.arrangement);
+      this.puzzle.solutionOrder.forEach((_, index) => this.lockedSlots.add(index));
+      this.statusTone = 'success';
+      this.statusMessage = 'The egg is already aligned and humming with stored light.';
+      return;
+    }
 
-    this.objectiveText = this.add.text(0, 0, this.puzzle.objective, {
-      fontFamily: THEME.fonts.body,
-      fontSize: '21px',
-      color: THEME.css.mist,
-      lineSpacing: 6
-    });
-
-    this.leftPanel = this.add
-      .rectangle(0, 0, LEFT_PANEL_BASE.width, LEFT_PANEL_BASE.height, THEME.colors.panel, 0.9)
-      .setStrokeStyle(2, THEME.colors.gold, 0.3);
-    this.leftPanelLabel = this.add.text(0, 0, 'Artifact Chamber', {
-      fontFamily: THEME.fonts.body,
-      fontSize: '20px',
-      color: THEME.css.gold,
-      fontStyle: 'bold'
-    });
-
-    this.rightPanel = this.add
-      .rectangle(0, 0, RIGHT_PANEL_BASE.width, RIGHT_PANEL_BASE.height, THEME.colors.panel, 0.92)
-      .setStrokeStyle(2, THEME.colors.gold, 0.3);
-    this.rightPanelLabel = this.add.text(0, 0, 'Omen Cards', {
-      fontFamily: THEME.fonts.body,
-      fontSize: '20px',
-      color: THEME.css.gold,
-      fontStyle: 'bold'
-    });
-
-    this.leftContent = this.add.container(0, 0);
-    this.rightContent = this.add.container(0, 0);
-
-    this.buildLeftContent();
-    this.buildRightContent();
-
-    this.resetButton = createTextButton(this, 0, 0, 170, 62, 'Clear Slots', () => this.resetBoard(), {
-      fontSize: '22px'
-    });
-    this.hintButton = createTextButton(this, 0, 0, 170, 62, 'Take Hint', () => this.applyHint(), {
-      fontSize: '22px'
-    });
-    this.testButton = createTextButton(this, 0, 0, 210, 62, 'Test Sequence', () => this.testSequence(), {
-      fontSize: '22px'
-    });
-    this.enterMazeButton = createTextButton(
-      this,
-      0,
-      0,
-      250,
-      68,
-      'Enter the Maze',
-      () => fadeToScene(this, SCENE_KEYS.MAZE)
-    );
+    this.arrangement = createEmptyArrangement(this.puzzle.solutionOrder.length);
+    this.lockedSlots.clear();
+    this.selectedFragmentId = null;
+    this.lastEvaluations = null;
+    this.solved = false;
+    this.statusTone = 'neutral';
+    this.statusMessage = 'Arrange the runes, then test the sequence against the omen cards.';
   }
 
-  private buildLeftContent(): void {
-    const content = this.leftContent;
+  private createWorld(): void {
+    this.worldFrame = this.add
+      .rectangle(0, 0, WORLD_BASE.width, WORLD_BASE.height, THEME.colors.panel, 0.24)
+      .setStrokeStyle(2, THEME.colors.gold, 0.22);
 
-    content.add(
-      this.add
-        .text(
-          0,
-          -304,
-          'Select a rune fragment, then place it on the pedestals beneath the egg.',
-          {
-            fontFamily: THEME.fonts.body,
-            fontSize: '20px',
-            color: THEME.css.mist,
-            align: 'center',
-            wordWrap: { width: 560 },
-            lineSpacing: 5
-          }
-        )
-        .setOrigin(0.5)
-    );
+    this.worldContainer = this.add.container(0, 0);
 
-    content.add(
-      this.add
-        .text(0, -246, this.puzzle.artifactName, {
-          fontFamily: THEME.fonts.display,
-          fontSize: '42px',
-          color: THEME.css.gold,
-          align: 'center'
-        })
-        .setOrigin(0.5)
-    );
-
-    content.add(
-      this.add
-        .ellipse(0, -54, 300, 374, THEME.colors.panelAlt, 1)
-        .setStrokeStyle(4, THEME.colors.gold, 0.42)
-    );
-    content.add(
-      this.add
-        .ellipse(0, -54, 226, 300, THEME.colors.midnight, 0.94)
-        .setStrokeStyle(2, THEME.colors.gold, 0.22)
-    );
-    content.add(
-      this.add
-        .ellipse(0, -104, 144, 174, THEME.colors.gold, 0.14)
-        .setBlendMode(Phaser.BlendModes.SCREEN)
-    );
-    content.add(
-      this.add
-        .ellipse(0, 12, 108, 146, THEME.colors.parchment, 0.1)
-        .setStrokeStyle(2, THEME.colors.gold, 0.18)
-    );
-    content.add(
-      this.add
-        .text(0, -50, 'Keyword sealed inside', {
-          fontFamily: THEME.fonts.display,
-          fontSize: '28px',
-          color: THEME.css.parchment,
-          align: 'center'
-        })
-        .setOrigin(0.5)
-    );
-    content.add(
-      this.add
-        .text(0, 6, 'Place every fragment so the omen cards agree.', {
-          fontFamily: THEME.fonts.body,
-          fontSize: '18px',
-          color: THEME.css.mist,
-          align: 'center',
-          wordWrap: { width: 260 },
-          lineSpacing: 5
-        })
-        .setOrigin(0.5)
-    );
-
-    this.selectedText = this.add
-      .text(0, -198, '', {
-        fontFamily: THEME.fonts.body,
-        fontSize: '20px',
-        color: THEME.css.gold,
-        align: 'center',
-        wordWrap: { width: 440 }
+    this.titleText = this.add
+      .text(0, -258, this.puzzle.artifactName, {
+        fontFamily: THEME.fonts.display,
+        fontSize: '38px',
+        color: THEME.css.gold
       })
       .setOrigin(0.5);
-    content.add(this.selectedText);
+
+    this.worldGlow = this.add
+      .ellipse(0, -54, 200, 220, THEME.colors.gold, 0.12)
+      .setBlendMode(Phaser.BlendModes.SCREEN);
+
+    const outerEgg = this.add
+      .ellipse(0, -10, 286, 308, THEME.colors.panelAlt, 0.96)
+      .setStrokeStyle(4, THEME.colors.gold, 0.4);
+    const innerEgg = this.add
+      .ellipse(0, -10, 216, 240, THEME.colors.midnight, 0.94)
+      .setStrokeStyle(2, THEME.colors.gold, 0.22);
+    const lowerGlyph = this.add
+      .ellipse(0, 38, 96, 118, THEME.colors.parchment, 0.08)
+      .setStrokeStyle(2, THEME.colors.gold, 0.18);
+
+    this.worldContainer.add([this.titleText, this.worldGlow, outerEgg, innerEgg, lowerGlyph]);
 
     const positions = [
-      { x: -192, y: -186 },
-      { x: 192, y: -186 },
-      { x: -258, y: -20 },
-      { x: 258, y: -20 },
-      { x: 0, y: 156 }
+      { x: -176, y: -78 },
+      { x: 176, y: -78 },
+      { x: -248, y: 42 },
+      { x: 248, y: 42 },
+      { x: 0, y: 164 }
     ];
 
     this.puzzle.fragments.forEach((fragment, index) => {
@@ -310,10 +206,11 @@ export class MiniPuzzleScene extends Phaser.Scene {
         sigilText,
         hitZone
       ]);
+
       container.setSize(134, 86);
       hitZone.setInteractive({ useHandCursor: true });
       hitZone.on('pointerdown', () => this.selectFragment(fragment.id));
-      content.add(container);
+      this.worldContainer.add(container);
 
       this.fragmentButtons.set(fragment.id, {
         container,
@@ -323,34 +220,22 @@ export class MiniPuzzleScene extends Phaser.Scene {
       });
     });
 
-    this.summaryText = this.add
-      .text(0, 318, '', {
-        fontFamily: THEME.fonts.body,
-        fontSize: '18px',
-        color: THEME.css.mist,
-        align: 'center',
-        wordWrap: { width: 560 },
-        lineSpacing: 4
-      })
-      .setOrigin(0.5);
-    content.add(this.summaryText);
-
     const startX = -224;
 
     for (let index = 0; index < this.puzzle.solutionOrder.length; index += 1) {
       const x = startX + index * 112;
-      const slotText = this.add
-        .text(x, 220, `Ped. ${index + 1}`, {
+      const pedestalLabel = this.add
+        .text(x, 232, `Ped. ${index + 1}`, {
           fontFamily: THEME.fonts.body,
           fontSize: '15px',
           color: THEME.css.mist
         })
         .setOrigin(0.5);
       const background = this.add
-        .rectangle(x, 270, 90, 82, THEME.colors.panel, 0.94)
+        .rectangle(x, 270, 90, 68, THEME.colors.panel, 0.94)
         .setStrokeStyle(2, THEME.colors.gold, 0.28);
       const fragmentText = this.add
-        .text(x, 262, '---', {
+        .text(x, 264, '---', {
           fontFamily: THEME.fonts.display,
           fontSize: '24px',
           color: THEME.css.parchment,
@@ -358,136 +243,248 @@ export class MiniPuzzleScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
       const lockText = this.add
-        .text(x, 292, '', {
+        .text(x, 290, '', {
           fontFamily: THEME.fonts.body,
           fontSize: '14px',
           color: THEME.css.gold
         })
         .setOrigin(0.5);
 
-      background.setInteractive();
+      background.setInteractive({ useHandCursor: true });
       background.on('pointerdown', () => this.handleSlotClick(index));
-      content.add([slotText, background, fragmentText, lockText]);
+      this.worldContainer.add([pedestalLabel, background, fragmentText, lockText]);
 
       this.slotViews.push({
         background,
-        slotText,
         fragmentText,
         lockText
       });
     }
   }
 
-  private buildRightContent(): void {
-    const keyCard = this.add
-      .rectangle(0, -240, 360, 94, THEME.colors.panelAlt, 0.96)
-      .setStrokeStyle(2, THEME.colors.gold, 0.28);
-    this.rightContent.add(keyCard);
-
-    this.keyRevealText = this.add
-      .text(0, -240, 'Cipher Key Locked', {
-        fontFamily: THEME.fonts.display,
-        fontSize: '34px',
-        color: THEME.css.gold,
-        align: 'center'
-      })
-      .setOrigin(0.5);
-    this.rightContent.add(this.keyRevealText);
-
-    this.puzzle.rules.forEach((rule, index) => {
-      const y = -118 + index * 72;
-      const background = this.add
-        .rectangle(0, y, 360, 58, THEME.colors.panelAlt, 0.96)
-        .setStrokeStyle(2, THEME.colors.gold, 0.28);
-      const text = this.add
-        .text(0, y, rule.description, {
-          fontFamily: THEME.fonts.body,
-          fontSize: '17px',
-          color: THEME.css.parchment,
-          align: 'center',
-          wordWrap: { width: 314 },
-          lineSpacing: 4
-        })
-        .setOrigin(0.5);
-
-      this.rightContent.add([background, text]);
-      this.clueViews.push({ background });
+  private createOverlay(): void {
+    this.overlay = overlayController.show(this.scene.key, {
+      layout: 'sidebar',
+      sceneClass: 'scene-mini'
     });
 
-    this.statusCard = this.add
-      .rectangle(0, 194, 360, 148, THEME.colors.panel, 0.92)
-      .setStrokeStyle(2, THEME.colors.gold, 0.3);
-    this.rightContent.add(this.statusCard);
+    const stats = createStatStrip([
+      { key: 'timer', label: 'Timer', value: '00:00.0', accent: 'gold' },
+      { key: 'attempts', label: 'Attempts', value: '0' },
+      { key: 'hints', label: 'Hints', value: '0' },
+      { key: 'key', label: 'Key', value: 'Locked', accent: 'success' }
+    ]);
 
-    this.statusText = this.add
-      .text(
-        0,
-        194,
-        'Arrange the runes around the egg, then test the full sequence against the omen cards.',
-        {
-          fontFamily: THEME.fonts.body,
-          fontSize: '19px',
-          color: THEME.css.parchment,
-          align: 'center',
-          wordWrap: { width: 308 },
-          lineSpacing: 6
-        }
-      )
-      .setOrigin(0.5);
-    this.rightContent.add(this.statusText);
+    this.timerValue = stats.values.timer;
+    this.attemptsValue = stats.values.attempts;
+    this.hintsValue = stats.values.hints;
+    this.keyHudValue = stats.values.key;
+    this.overlay.top.append(stats.root);
+
+    this.selectedInfo = el('p', 'ui-panel__description');
+    this.summaryInfo = el('p', 'ui-panel__description');
+
+    const keyLabel = el('div', 'key-display__label', 'Cipher Key');
+    this.keyDisplayValue = el('div', 'key-display__value', 'Locked');
+    const keyDisplay = el('div', 'key-display');
+    keyDisplay.append(keyLabel, this.keyDisplayValue);
+
+    this.omenButton = createButton({
+      label: 'View Omen Cards',
+      tone: 'secondary',
+      onClick: () => {
+        this.omenCardsOpen = !this.omenCardsOpen;
+        this.renderOmenCardsModal();
+        this.refreshOverlay();
+      }
+    });
+
+    this.hintButton = createButton({
+      label: 'Take Hint',
+      tone: 'secondary',
+      onClick: () => this.applyHint()
+    });
+
+    this.resetButton = createButton({
+      label: 'Clear Slots',
+      tone: 'ghost',
+      onClick: () => this.resetBoard()
+    });
+
+    this.testButton = createButton({
+      label: 'Test Sequence',
+      onClick: () => this.testSequence()
+    });
+
+    this.enterMazeButton = createButton({
+      label: 'Enter the Maze',
+      disabled: true,
+      onClick: () => fadeToScene(this, SCENE_KEYS.MAZE)
+    });
+
+    const sidePanel = createPanel(
+      {
+        className: 'mini-sidebar',
+        eyebrow: 'Phase 1: Key Unlock',
+        title: this.puzzle.title,
+        description: this.puzzle.objective
+      },
+      createTutorialBox('Artifact Controls', this.puzzle.interactionHint),
+      keyDisplay,
+      createPanel(
+        { title: 'Current Focus' },
+        this.selectedInfo,
+        this.summaryInfo
+      ),
+      createButtonRow(this.omenButton, this.hintButton),
+      createButtonRow(this.resetButton, this.testButton),
+      createButtonRow(this.enterMazeButton)
+    );
+
+    this.footerPanel = createPanel({ className: 'status-panel' });
+    this.footerText = el('p', 'status-text');
+    this.footerPanel.append(this.footerText);
+
+    this.overlay.side.append(sidePanel);
+    this.overlay.footer.append(this.footerPanel);
   }
 
   private layoutScene(): void {
-    const metrics = getSceneLayoutMetrics(this);
-    const hudWidthReserve = Phaser.Math.Clamp(Math.round(metrics.width * 0.24), 320, 380) + metrics.gap;
-    const titleWrapWidth = Math.max(380, metrics.width - metrics.padding * 2 - hudWidthReserve);
-
-    this.titleText.setPosition(metrics.padding, metrics.padding + 2);
-    this.objectiveText
-      .setPosition(metrics.padding, metrics.padding + 46)
-      .setWordWrapWidth(titleWrapWidth);
-
-    const rightWidth = Phaser.Math.Clamp(Math.round(metrics.usableWidth * 0.31), 360, 450);
-    const leftWidth = metrics.usableWidth - rightWidth - metrics.gap;
-    const panelHeight = metrics.contentBottom - metrics.contentTop;
-    const panelY = metrics.contentTop + panelHeight / 2;
-    const leftX = metrics.padding + leftWidth / 2;
-    const rightX = leftX + leftWidth / 2 + metrics.gap + rightWidth / 2;
-
-    this.leftPanel.setPosition(leftX, panelY).setSize(leftWidth, panelHeight);
-    this.leftPanelLabel.setPosition(leftX - leftWidth / 2 + 18, panelY - panelHeight / 2 + 14);
-    this.rightPanel.setPosition(rightX, panelY).setSize(rightWidth, panelHeight);
-    this.rightPanelLabel.setPosition(rightX - rightWidth / 2 + 18, panelY - panelHeight / 2 + 14);
-
-    this.leftContent.setPosition(leftX, panelY).setScale(
-      fitIntoBox(LEFT_PANEL_BASE.width, LEFT_PANEL_BASE.height, leftWidth - 30, panelHeight - 46, 1)
-    );
-    this.rightContent.setPosition(rightX, panelY).setScale(
-      fitIntoBox(RIGHT_PANEL_BASE.width, RIGHT_PANEL_BASE.height, rightWidth - 30, panelHeight - 46, 1)
+    const metrics = getWorldFrame(this, { reserveSidebar: true });
+    const frameWidth = Math.min(metrics.contentWidth, 900);
+    const frameHeight = Math.min(metrics.contentHeight, 760);
+    const worldScale = fitIntoBox(
+      WORLD_BASE.width,
+      WORLD_BASE.height,
+      frameWidth - 36,
+      frameHeight - 36,
+      1.12
     );
 
-    const buttonGap = metrics.gap;
-    const buttonWidths = metrics.isCompact ? [150, 150, 180, 220] : [170, 170, 210, 250];
-    const buttonHeights = metrics.isCompact ? [58, 58, 58, 64] : [62, 62, 62, 68];
-    const totalButtonWidth =
-      buttonWidths.reduce((total, width) => total + width, 0) + buttonGap * (buttonWidths.length - 1);
-    const startX = metrics.width / 2 - totalButtonWidth / 2;
-    const buttonY = metrics.height - metrics.padding - 38;
-    const positions = buttonWidths.map((width, index) => {
-      const offset =
-        buttonWidths.slice(0, index).reduce((total, value) => total + value, 0) + buttonGap * index;
-      return startX + width / 2 + offset;
+    this.worldFrame.setPosition(metrics.centerX, metrics.centerY).setSize(frameWidth, frameHeight);
+    this.worldContainer.setPosition(metrics.centerX, metrics.centerY + 8).setScale(worldScale);
+  }
+
+  private refreshHud(): void {
+    const snapshot = runState.getSnapshot();
+
+    if (this.timerValue) {
+      this.timerValue.textContent = formatDuration(snapshot.elapsedMs);
+    }
+
+    if (this.attemptsValue) {
+      this.attemptsValue.textContent = `${snapshot.miniPuzzleAttempts}`;
+    }
+
+    if (this.hintsValue) {
+      this.hintsValue.textContent = `${snapshot.hintsUsed}`;
+    }
+
+    const keyLabel = snapshot.keyWord ?? 'Locked';
+    this.keyHudValue && (this.keyHudValue.textContent = keyLabel);
+  }
+
+  private refreshOverlay(): void {
+    const snapshot = runState.getSnapshot();
+
+    this.refreshHud();
+
+    if (this.keyDisplayValue) {
+      this.keyDisplayValue.textContent = this.solved ? this.puzzle.keyWord : 'Locked';
+    }
+
+    if (this.selectedInfo) {
+      const selectedName = this.selectedFragmentId
+        ? this.puzzle.fragments.find((fragment) => fragment.id === this.selectedFragmentId)?.label ?? 'Unknown Rune'
+        : 'None';
+      this.selectedInfo.textContent = `Selected fragment: ${selectedName}.`;
+    }
+
+    if (this.summaryInfo) {
+      this.summaryInfo.textContent = `Aligned pedestals ${countCorrectPlacements(this.puzzle, this.arrangement)}/5. Attempts ${snapshot.miniPuzzleAttempts}. Hints ${snapshot.hintsUsed}.`;
+    }
+
+    if (this.footerPanel && this.footerText) {
+      this.footerPanel.className = `ui-panel status-panel${
+        this.statusTone !== 'neutral' ? ` ui-panel--${this.statusTone}` : ''
+      }`;
+      this.footerText.textContent = this.statusMessage;
+    }
+
+    if (this.omenButton) {
+      this.omenButton.textContent = this.omenCardsOpen ? 'Hide Omen Cards' : 'View Omen Cards';
+    }
+
+    if (this.hintButton) {
+      this.hintButton.disabled = this.solved;
+    }
+
+    if (this.resetButton) {
+      this.resetButton.disabled = this.solved;
+    }
+
+    if (this.testButton) {
+      this.testButton.disabled = this.solved;
+    }
+
+    if (this.enterMazeButton) {
+      this.enterMazeButton.disabled = !this.solved;
+      this.enterMazeButton.textContent = this.solved ? 'Carry Key into Maze' : 'Enter the Maze';
+    }
+
+    this.renderOmenCardsModal();
+  }
+
+  private renderOmenCardsModal(): void {
+    if (!this.overlay) {
+      return;
+    }
+
+    this.overlay.modal.replaceChildren();
+
+    if (!this.omenCardsOpen) {
+      return;
+    }
+
+    const backdrop = el('div', 'modal-backdrop');
+    const panel = createPanel(
+      {
+        className: 'modal-panel',
+        eyebrow: 'Omen Cards',
+        title: this.solved ? `Cipher Key Revealed: ${this.puzzle.keyWord}` : 'Cipher Key Locked',
+        description: 'The omen cards are the source of truth for the egg sequence.'
+      }
+    );
+    const ruleList = el('div', 'rule-list');
+
+    this.puzzle.rules.forEach((rule, index) => {
+      const evaluation = this.lastEvaluations?.[index];
+      const toneClass = evaluation ? (evaluation.satisfied ? ' rule-card--success' : ' rule-card--danger') : '';
+      ruleList.append(el('div', `rule-card${toneClass}`, rule.description));
     });
 
-    [
-      { button: this.resetButton, width: buttonWidths[0], height: buttonHeights[0], x: positions[0] },
-      { button: this.hintButton, width: buttonWidths[1], height: buttonHeights[1], x: positions[1] },
-      { button: this.testButton, width: buttonWidths[2], height: buttonHeights[2], x: positions[2] },
-      { button: this.enterMazeButton, width: buttonWidths[3], height: buttonHeights[3], x: positions[3] }
-    ].forEach(({ button, width, height, x }) => {
-      button.setPosition(x, buttonY);
-      button.resize(width, height);
+    const closeButton = createButton({
+      label: 'Close',
+      tone: 'ghost',
+      onClick: () => {
+        this.omenCardsOpen = false;
+        this.renderOmenCardsModal();
+        this.refreshOverlay();
+      }
     });
+
+    panel.append(ruleList, createButtonRow(closeButton));
+    backdrop.append(panel);
+    backdrop.addEventListener('click', (event) => {
+      if (event.target === backdrop) {
+        this.omenCardsOpen = false;
+        this.renderOmenCardsModal();
+        this.refreshOverlay();
+      }
+    });
+    panel.addEventListener('click', (event) => event.stopPropagation());
+
+    this.overlay.modal.append(backdrop);
   }
 
   private selectFragment(fragmentId: string): void {
@@ -542,7 +539,6 @@ export class MiniPuzzleScene extends Phaser.Scene {
     if (isSolvedArrangement(this.puzzle, this.arrangement)) {
       this.solved = true;
       runState.setKeyWord(this.puzzle.keyWord);
-      this.keyRevealText.setText(`Cipher Key Revealed\n${this.puzzle.keyWord}`);
       this.setStatusMessage(
         'The omen cards resolve into a single harmony. The egg opens and the maze key burns into memory.',
         'success'
@@ -551,7 +547,7 @@ export class MiniPuzzleScene extends Phaser.Scene {
       this.puzzle.solutionOrder.forEach((_, index) => this.lockedSlots.add(index));
       this.cameras.main.flash(220, 212, 177, 90, false);
       this.tweens.add({
-        targets: [this.keyRevealText, this.rightPanel, this.enterMazeButton],
+        targets: [this.worldFrame, this.worldGlow],
         scaleX: 1.03,
         scaleY: 1.03,
         yoyo: true,
@@ -568,12 +564,6 @@ export class MiniPuzzleScene extends Phaser.Scene {
       'danger'
     );
     this.cameras.main.shake(110, 0.0014);
-    this.tweens.add({
-      targets: this.clueViews.map((view) => view.background),
-      alpha: 0.84,
-      yoyo: true,
-      duration: 120
-    });
     this.refreshView();
   }
 
@@ -628,7 +618,7 @@ export class MiniPuzzleScene extends Phaser.Scene {
     );
     this.selectedFragmentId = null;
     this.lastEvaluations = null;
-    this.setStatusMessage('The loose fragments drift free. The locked hint pedestals remain in place.', 'neutral');
+    this.setStatusMessage('The loose fragments drift free. Locked hint pedestals remain in place.', 'neutral');
     this.refreshView();
   }
 
@@ -671,70 +661,14 @@ export class MiniPuzzleScene extends Phaser.Scene {
       }
     });
 
-    this.clueViews.forEach((view, index) => {
-      const evaluation = this.lastEvaluations?.[index];
-      if (!evaluation) {
-        view.background.setFillStyle(THEME.colors.panelAlt, 0.96);
-        view.background.setStrokeStyle(2, THEME.colors.gold, 0.28);
-        return;
-      }
-
-      view.background.setFillStyle(
-        evaluation.satisfied ? THEME.colors.moss : THEME.colors.danger,
-        evaluation.satisfied ? 0.72 : 0.48
-      );
-      view.background.setStrokeStyle(2, THEME.colors.gold, evaluation.satisfied ? 0.56 : 0.34);
-    });
-
-    this.selectedText.setText(
-      this.selectedFragmentId
-        ? `Selected fragment: ${this.puzzle.fragments.find((fragment) => fragment.id === this.selectedFragmentId)?.label}`
-        : this.puzzle.interactionHint
-    );
-
-    this.summaryText.setText(
-      `Aligned pedestals ${countCorrectPlacements(this.puzzle, this.arrangement)}/5  |  Attempts ${snapshot.miniPuzzleAttempts}  |  Hints ${snapshot.hintsUsed}`
-    );
-
-    if (this.solved) {
-      this.enterMazeButton.setLabel('Carry Key into Maze');
-      this.enterMazeButton.setEnabled(true);
-      this.hintButton.setEnabled(false);
-      this.testButton.setEnabled(false);
-      this.resetButton.setEnabled(false);
-      return;
-    }
-
-    this.enterMazeButton.setLabel('Enter the Maze');
-    this.enterMazeButton.setEnabled(false);
-    this.hintButton.setEnabled(true);
-    this.testButton.setEnabled(true);
-    this.resetButton.setEnabled(true);
+    this.keyHudValue && (this.keyHudValue.textContent = snapshot.keyWord ?? 'Locked');
+    this.refreshOverlay();
   }
 
-  private setStatusMessage(
-    message: string,
-    tone: 'neutral' | 'success' | 'danger' | 'warning'
-  ): void {
-    const config =
-      tone === 'success'
-        ? { textColor: THEME.css.gold, fillColor: THEME.colors.moss, fillAlpha: 0.3, strokeAlpha: 0.58 }
-        : tone === 'danger'
-          ? { textColor: THEME.css.danger, fillColor: THEME.colors.danger, fillAlpha: 0.18, strokeAlpha: 0.42 }
-          : tone === 'warning'
-            ? { textColor: THEME.css.gold, fillColor: THEME.colors.ember, fillAlpha: 0.18, strokeAlpha: 0.38 }
-            : { textColor: THEME.css.parchment, fillColor: THEME.colors.panel, fillAlpha: 0.92, strokeAlpha: 0.3 };
-
-    this.statusText.setText(message).setColor(config.textColor);
-    this.statusCard.setFillStyle(config.fillColor, config.fillAlpha);
-    this.statusCard.setStrokeStyle(2, THEME.colors.gold, config.strokeAlpha);
-
-    this.tweens.add({
-      targets: this.statusText,
-      alpha: 0.76,
-      yoyo: true,
-      duration: 120
-    });
+  private setStatusMessage(message: string, tone: StatusTone): void {
+    this.statusTone = tone;
+    this.statusMessage = message;
+    this.refreshOverlay();
   }
 
   private isFragmentPlaced(fragmentId: string): boolean {
