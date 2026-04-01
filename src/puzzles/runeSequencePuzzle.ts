@@ -1,3 +1,5 @@
+import { DEFAULT_KEYWORD, MINI_PUZZLE_HINT_PENALTY_MS } from '../data/runConfig';
+
 export type RuneFragment = {
   id: string;
   label: string;
@@ -50,8 +52,8 @@ export const runeSequencePuzzle: RuneSequencePuzzle = {
     'Seat the five rune fragments from left to right so every omen card is true. When the sequence aligns, the egg will release the maze key.',
   interactionHint:
     'Click a rune fragment to select it, then place it on a pedestal. Click a filled pedestal with no fragment selected to clear it.',
-  keyWord: 'TRIWIZARD',
-  hintPenaltyMs: 15000,
+  keyWord: DEFAULT_KEYWORD,
+  hintPenaltyMs: MINI_PUZZLE_HINT_PENALTY_MS,
   fragments: [
     {
       id: 'mist',

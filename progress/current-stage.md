@@ -1,57 +1,91 @@
 # Current Stage
 
 ## Implemented In This Pass
-- Replaced the placeholder mini-puzzle with a real rune-ordering artifact puzzle in the egg chamber.
-- Added data-driven rune puzzle content and reusable puzzle-evaluation logic modules.
-- Extended run state to track mini-puzzle attempts in addition to hints, penalties, and the unlocked keyword.
-- Updated the maze so it now requires an earned key in `RunState` before the checkpoint markers will respond.
-- Kept the current maze clue translation temporary, but made it clearly depend on the real unlocked key instead of bypassing the mini-puzzle.
+- Expanded the maze from a short 3-checkpoint teaching slice into a 6-checkpoint short run with a clearer arc from onboarding to final pressure.
+- Kept the maze data-driven by moving checkpoint pacing and penalty tuning further into `src/data/mazeCheckpoints.ts` and `src/data/runConfig.ts`.
+- Added named maze penalty tiers and a shared mini-puzzle hint penalty constant so timing pressure is easier to tune without digging through scene logic.
+- Updated maze progression tracking so each cleared checkpoint records a split-like result entry for the finish screen.
+- Refined the results screen to better support replay by showing a clearer run-quality summary plus checkpoint split information.
+- Updated the maze preview logic so a longer checkpoint list still fits cleanly inside the current responsive layout.
 
 ## Key Files To Inspect
-- `package.json`
-- `vite.config.ts`
-- `src/core/game.ts`
-- `src/systems/RunState.ts`
-- `src/scenes/MiniPuzzleScene.ts`
-- `src/scenes/MazeScene.ts`
-- `src/scenes/ResultsScene.ts`
-- `src/puzzles/runeSequencePuzzle.ts`
-- `src/puzzles/runeSequenceLogic.ts`
 - `src/data/mazeCheckpoints.ts`
+- `src/data/runConfig.ts`
+- `src/scenes/MazeScene.ts`
+- `src/systems/RunState.ts`
+- `src/scenes/ResultsScene.ts`
+- `src/puzzles/mazeCipher.ts`
 
 ## How To Run Locally
-1. Install Node.js if it is not already available on your machine.
-2. From the repo root, run `npm install`.
-3. Start local development with `npm run dev`.
-4. Open the Vite URL shown in the terminal, usually `http://127.0.0.1:5173`.
+1. From the repo root, run `npm install` if dependencies are not installed yet.
+2. Start local development with `npm run dev`.
+3. Open the Vite URL shown in the terminal, usually `http://127.0.0.1:5173`.
 
 ## Verification Note
-- Source files and project structure are in place.
-- `npm install --ignore-scripts --cache .npm-cache` completed successfully in this environment.
-- `tsc --noEmit` passes.
-- Full Vite build could not be executed inside this sandbox because `esbuild` child-process spawning fails here with `spawn EPERM`.
+- `tsc --noEmit` passes in this environment.
+- Full Vite execution is still blocked in this sandbox by the existing `esbuild` child-process `spawn EPERM` restriction, so browser verification still needs to happen locally.
 
-## Assumptions
-- Kept the keyword fixed at `TRIWIZARD` for this milestone.
-- Used a five-rune ordering puzzle because it fits the docs' preferred fragment/rune direction while staying readable in a first playable slice.
-- Kept the timer starting on `Begin Trial` from the intro scene, matching the preferred documentation direction.
+## Checkpoint Expansion
+- The maze now contains 6 checkpoints:
+  - tutorial opener,
+  - two opening stretch markers,
+  - two pressure stretch markers,
+  - one final marker.
+- The decoded command sequence now forms a fuller short run:
+  - `LEFT`
+  - `FORWARD`
+  - `NORTH`
+  - `EAST`
+  - `SOUTH`
+  - `RIGHT`
+- This keeps the interaction readable while extending the run enough to feel like a real short race rather than a pure tutorial.
 
-## How The Puzzle Works
-- The player must place five rune fragments onto five pedestals so all omen cards are true.
-- The omen cards describe positional relationships such as immediate-left chains and one rune standing between two others.
-- The player clicks a fragment to select it, places it on a pedestal, and then presses `Test Sequence` to judge the arrangement.
-- Incorrect tests record an attempt and color the omen cards by which relationships are satisfied.
-- `Take Hint` locks the next unresolved correct pedestal and costs time.
-- Solving the sequence reveals the key word `TRIWIZARD` and unlocks the maze transition.
+## Difficulty Progression
+- Checkpoint I:
+  - short tutorial decode,
+  - lowest penalties,
+  - direct onboarding.
+- Checkpoints II-III:
+  - straightforward application,
+  - one longer route word,
+  - still focused on building decoder confidence.
+- Checkpoints IV-V:
+  - stronger pressure,
+  - more punishing wrong branches,
+  - route words still fair but recoveries cost more.
+- Checkpoint VI:
+  - short final clue for readability,
+  - pressure comes from stakes and accumulated time rather than opaque cipher work.
 
-## What Remains Temporary
-- Maze checkpoints still expose a provisional translated command once the real key has been earned.
-- The full keyed cipher interaction for decoding checkpoint text is not implemented yet.
-- The mini-puzzle uses procedural UI art rather than bespoke asset work.
+## Balancing Changes
+- Added shared maze penalty tiers in `src/data/runConfig.ts`:
+  - `light = 4s`
+  - `standard = 5.5s`
+  - `heavy = 7s`
+  - `severe = 8.5s`
+- Kept the mini-puzzle hint penalty centralized as `15s`.
+- The balance goal is now:
+  - one mistake matters,
+  - repeated mistakes are race-losing,
+  - but a single wrong turn does not automatically ruin the run.
+- The checkpoint preview and results screen now make the longer route easier to read and compare during playtesting.
+
+## Replay And Results Improvements
+- Results now show:
+  - clearer performance summary text,
+  - total penalties and mistake counts,
+  - split-like checkpoint timings for each cleared marker.
+- This gives repeat players more obvious feedback about where time was gained or lost even without a persistent leaderboard yet.
+
+## What Still Feels Temporary
+- The maze content is fuller now, but still intentionally modest rather than final-scale.
+- Visual atmosphere and audio are still mostly placeholder-level.
+- The split data is useful for replay, but there is still no saved best-time history or comparison across runs.
+- Cipher interaction is readable and fair, but still uses the same lightweight helper presentation rather than a more polished final decoder UI.
 
 ## Recommended Next Step
-Build Milestone 5:
-- replace the provisional maze translation with real key-based cipher decoding,
-- let the unlocked keyword actively drive clue solving at each checkpoint,
-- preserve the current branching checkpoint flow and penalty system,
-- then refine feedback and presentation once the cipher loop is real.
+Move into thematic polish and playtesting iteration:
+- playtest the new 6-checkpoint route for actual completion times and penalty feel,
+- tune clue order or branch punishments if any checkpoint spikes too hard,
+- deepen atmosphere with subtle effects and audio,
+- then consider lightweight best-time persistence or run-history comparison.

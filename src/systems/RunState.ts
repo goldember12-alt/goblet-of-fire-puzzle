@@ -1,5 +1,13 @@
 export type RunPhase = 'title' | 'intro' | 'mini-puzzle' | 'maze' | 'results';
 
+export type CheckpointSplit = {
+  checkpointId: string;
+  title: string;
+  checkpointNumber: number;
+  elapsedMs: number;
+  splitMs: number;
+};
+
 type InternalRunState = {
   phase: RunPhase;
   active: boolean;
@@ -11,6 +19,7 @@ type InternalRunState = {
   hintsUsed: number;
   currentCheckpoint: number;
   totalCheckpoints: number;
+  checkpointSplits: CheckpointSplit[];
   finalTimeMs: number | null;
 };
 
@@ -29,6 +38,7 @@ const createInitialState = (): InternalRunState => ({
   hintsUsed: 0,
   currentCheckpoint: 0,
   totalCheckpoints: 0,
+  checkpointSplits: [],
   finalTimeMs: null
 });
 
@@ -68,6 +78,27 @@ class RunStateStore {
   setCheckpointProgress(currentCheckpoint: number, totalCheckpoints: number): void {
     this.state.currentCheckpoint = currentCheckpoint;
     this.state.totalCheckpoints = totalCheckpoints;
+  }
+
+  recordCheckpointClear(checkpointId: string, title: string, checkpointNumber: number): void {
+    const existingSplit = this.state.checkpointSplits.find((split) => split.checkpointId === checkpointId);
+    if (existingSplit) {
+      return;
+    }
+
+    const elapsedMs = this.getElapsedMs();
+    const previousElapsedMs =
+      this.state.checkpointSplits.length > 0
+        ? this.state.checkpointSplits[this.state.checkpointSplits.length - 1].elapsedMs
+        : 0;
+
+    this.state.checkpointSplits.push({
+      checkpointId,
+      title,
+      checkpointNumber,
+      elapsedMs,
+      splitMs: elapsedMs - previousElapsedMs
+    });
   }
 
   addPenalty(ms: number): void {

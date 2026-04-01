@@ -15,7 +15,7 @@ export const createGame = (): Phaser.Game =>
     height: GAME_HEIGHT,
     backgroundColor: '#07110d',
     scale: {
-      mode: Phaser.Scale.FIT,
+      mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: GAME_WIDTH,
       height: GAME_HEIGHT
