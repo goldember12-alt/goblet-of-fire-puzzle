@@ -65,3 +65,12 @@ export const cycleGuessLetter = (current: string): string => {
   const currentIndex = getAlphabetIndex(current);
   return currentIndex === ALPHABET.length - 1 ? '?' : ALPHABET[currentIndex + 1];
 };
+
+export const cycleGuessLetterBackward = (current: string): string => {
+  if (current === '?') {
+    return 'Z';
+  }
+
+  const currentIndex = getAlphabetIndex(current);
+  return currentIndex === 0 ? '?' : ALPHABET[currentIndex - 1];
+};

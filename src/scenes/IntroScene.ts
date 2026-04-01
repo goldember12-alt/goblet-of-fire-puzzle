@@ -12,7 +12,6 @@ const PRIMER_BASE = { width: 390, height: 430 };
 
 export class IntroScene extends Phaser.Scene {
   private titleText!: Phaser.GameObjects.Text;
-  private subtitleText!: Phaser.GameObjects.Text;
   private briefingPanel!: Phaser.GameObjects.Rectangle;
   private briefingLabel!: Phaser.GameObjects.Text;
   private briefingContent!: Phaser.GameObjects.Container;
@@ -37,19 +36,6 @@ export class IntroScene extends Phaser.Scene {
       fontSize: '66px',
       color: THEME.css.parchment
     });
-
-    this.subtitleText = this.add.text(
-      0,
-      0,
-      'Earn the key, read the markers, and keep your route clean enough to chase a best time.',
-      {
-        fontFamily: THEME.fonts.body,
-        fontSize: '25px',
-        color: THEME.css.mist,
-        align: 'center',
-        lineSpacing: 6
-      }
-    );
 
     this.briefingPanel = this.add
       .rectangle(0, 0, BRIEFING_BASE.width, BRIEFING_BASE.height, THEME.colors.panel, 0.92)
@@ -105,14 +91,14 @@ export class IntroScene extends Phaser.Scene {
     const introText = this.add
       .text(
         0,
-        -160,
-        'Each phase teaches the next one. Solve the artifact first so the hedge markers become readable under pressure.',
+        -158,
+        'Solve the artifact first, then carry the recovered key into the maze and trust the decoded route signs.',
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '24px',
+          fontSize: '22px',
           color: THEME.css.parchment,
           align: 'center',
-          wordWrap: { width: 560 },
+          wordWrap: { width: 520 },
           lineSpacing: 8
         }
       )
@@ -126,13 +112,13 @@ export class IntroScene extends Phaser.Scene {
         body: 'Arrange the five rune fragments until every omen card agrees and the keyword is revealed.'
       },
       {
-        y: 84,
+        y: 86,
         step: '2',
         title: 'Read the Marker',
         body: 'Repeat the keyword under the ciphertext, shift backward by each shown amount, and uncover the route word.'
       },
       {
-        y: 204,
+        y: 208,
         step: '3',
         title: 'Choose Fast',
         body: 'Pick the matching route. Wrong turns and hints cost time, so cleaner runs beat merely correct ones.'
@@ -153,16 +139,16 @@ export class IntroScene extends Phaser.Scene {
       const title = this.add
         .text(-210, step.y - 24, step.title, {
           fontFamily: THEME.fonts.display,
-          fontSize: '28px',
+          fontSize: '26px',
           color: THEME.css.gold
         })
         .setOrigin(0, 0.5);
       const body = this.add
         .text(-210, step.y + 18, step.body, {
           fontFamily: THEME.fonts.body,
-          fontSize: '20px',
+          fontSize: '18px',
           color: THEME.css.mist,
-          wordWrap: { width: 460 },
+          wordWrap: { width: 430 },
           lineSpacing: 6
         })
         .setOrigin(0, 0.5);
@@ -177,26 +163,26 @@ export class IntroScene extends Phaser.Scene {
     const headline = this.add
       .text(0, -162, 'First marker onboarding', {
         fontFamily: THEME.fonts.display,
-        fontSize: '34px',
+        fontSize: '32px',
         color: THEME.css.parchment,
         align: 'center'
       })
       .setOrigin(0.5);
 
     const helperBackground = this.add
-      .rectangle(0, -28, 298, 166, THEME.colors.panelAlt, 0.96)
+      .rectangle(0, -30, 300, 154, THEME.colors.panelAlt, 0.96)
       .setStrokeStyle(2, THEME.colors.gold, 0.28);
     const helperText = this.add
       .text(
         0,
-        -28,
-        'Cipher\nR C M M\n\nKey\nT R I W\n\nShift\n-19 -17 -8 -22',
+        -34,
+        'Cipher  R C M M\nKey     T R I W\nShift   -19 -17 -8 -22\nInput   Up/Down change a letter',
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '24px',
+          fontSize: '20px',
           color: THEME.css.parchment,
           align: 'center',
-          lineSpacing: 8
+          lineSpacing: 10
         }
       )
       .setOrigin(0.5);
@@ -204,11 +190,11 @@ export class IntroScene extends Phaser.Scene {
     const notes = this.add
       .text(
         0,
-        128,
-        'The first checkpoint is intentionally short so you can learn the decoder rhythm before the run asks for speed. Click letters or type directly into the decode row.',
+        120,
+        'The first checkpoint is intentionally short. Use Left and Right to move between cells, then Up and Down or the mouse to change letters.',
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '19px',
+          fontSize: '18px',
           color: THEME.css.mist,
           align: 'center',
           wordWrap: { width: 300 },
@@ -234,10 +220,6 @@ export class IntroScene extends Phaser.Scene {
     const topY = metrics.contentTop + panelHeight / 2;
 
     this.titleText.setPosition(metrics.width / 2, metrics.padding + 20).setOrigin(0.5);
-    this.subtitleText
-      .setPosition(metrics.width / 2, metrics.padding + 86)
-      .setOrigin(0.5)
-      .setWordWrapWidth(Math.min(920, metrics.usableWidth - 60));
 
     if (stacked) {
       const firstPanelY = metrics.contentTop + panelHeight / 2 - 6;

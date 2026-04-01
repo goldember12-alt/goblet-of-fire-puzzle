@@ -30,7 +30,7 @@ export class RunHud {
     this.phaseText = scene.add
       .text(0, 0, phaseLabel, {
         fontFamily: THEME.fonts.body,
-        fontSize: '20px',
+        fontSize: '18px',
         color: THEME.css.mist,
         fontStyle: 'bold'
       })
@@ -39,7 +39,7 @@ export class RunHud {
     this.timerText = scene.add
       .text(0, 0, '00:00.0', {
         fontFamily: THEME.fonts.display,
-        fontSize: '42px',
+        fontSize: '36px',
         color: THEME.css.parchment
       })
       .setOrigin(0, 0.5);
@@ -47,7 +47,7 @@ export class RunHud {
     this.keyText = scene.add
       .text(0, 0, 'Key: Locked', {
         fontFamily: THEME.fonts.body,
-        fontSize: '20px',
+        fontSize: '18px',
         color: THEME.css.gold
       })
       .setOrigin(0, 0.5);
@@ -55,7 +55,7 @@ export class RunHud {
     this.metaText = scene.add
       .text(0, 0, '', {
         fontFamily: THEME.fonts.body,
-        fontSize: '18px',
+        fontSize: '16px',
         color: THEME.css.mist,
         wordWrap: { width: 320 }
       })
@@ -88,17 +88,17 @@ export class RunHud {
 
   private layout(): void {
     const metrics = getSceneLayoutMetrics(this.scene);
-    const panelWidth = Phaser.Math.Clamp(Math.round(metrics.width * 0.28), 320, 420);
-    const panelHeight = metrics.isCompact ? 130 : 142;
+    const panelWidth = Phaser.Math.Clamp(Math.round(metrics.width * 0.26), 300, 392);
+    const panelHeight = metrics.isCompact ? 148 : 160;
     const panelX = metrics.width - metrics.padding - panelWidth / 2;
     const panelY = metrics.padding + panelHeight / 2;
     const textLeft = panelX - panelWidth / 2 + 18;
 
     this.panel.setPosition(panelX, panelY).setSize(panelWidth, panelHeight);
     this.labelText.setPosition(textLeft, panelY - panelHeight / 2 + 14);
-    this.phaseText.setPosition(textLeft, panelY - 34);
-    this.timerText.setPosition(textLeft, panelY - 2);
-    this.keyText.setPosition(textLeft, panelY + 34);
-    this.metaText.setPosition(textLeft, panelY + 62).setWordWrapWidth(panelWidth - 34);
+    this.phaseText.setPosition(textLeft, panelY - 40);
+    this.timerText.setPosition(textLeft, panelY - 8);
+    this.keyText.setPosition(textLeft, panelY + 26);
+    this.metaText.setPosition(textLeft, panelY + 54).setWordWrapWidth(panelWidth - 34);
   }
 }

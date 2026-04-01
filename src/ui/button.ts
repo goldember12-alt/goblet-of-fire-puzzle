@@ -12,6 +12,7 @@ export type ButtonOptions = {
 export type TextButton = Phaser.GameObjects.Container & {
   setEnabled: (enabled: boolean) => void;
   setLabel: (label: string) => void;
+  resize: (width: number, height: number) => void;
 };
 
 export const createTextButton = (
@@ -32,6 +33,7 @@ export const createTextButton = (
   const background = scene.add
     .rectangle(0, 0, width, height, fillColor, 0.96)
     .setStrokeStyle(2, THEME.colors.gold, 0.4);
+  const hitZone = scene.add.rectangle(0, 0, width, height, 0xffffff, 0.001);
   const text = scene.add
     .text(0, 0, label, {
       fontFamily: THEME.fonts.body,
@@ -42,12 +44,9 @@ export const createTextButton = (
     })
     .setOrigin(0.5);
 
-  const container = scene.add.container(x, y, [glow, background, text]) as TextButton;
+  const container = scene.add.container(x, y, [glow, background, hitZone, text]) as TextButton;
   container.setSize(width, height);
-  container.setInteractive(
-    new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
-    Phaser.Geom.Rectangle.Contains
-  );
+  hitZone.setInteractive({ useHandCursor: true });
 
   let enabled = true;
 
@@ -71,19 +70,19 @@ export const createTextButton = (
     glow.setAlpha(0.07);
   };
 
-  container.on('pointerover', () => {
+  hitZone.on('pointerover', () => {
     if (enabled) {
       applyVisualState('hover');
     }
   });
 
-  container.on('pointerout', () => {
+  hitZone.on('pointerout', () => {
     if (enabled) {
       applyVisualState('default');
     }
   });
 
-  container.on('pointerdown', () => {
+  hitZone.on('pointerdown', () => {
     if (!enabled) {
       return;
     }
@@ -101,8 +100,9 @@ export const createTextButton = (
   container.setEnabled = (nextEnabled: boolean) => {
     enabled = nextEnabled;
 
-    if (container.input) {
-      container.input.enabled = nextEnabled;
+    hitZone.disableInteractive();
+    if (nextEnabled) {
+      hitZone.setInteractive({ useHandCursor: true });
     }
 
     container.setAlpha(nextEnabled ? 1 : 0.68);
@@ -111,6 +111,14 @@ export const createTextButton = (
 
   container.setLabel = (nextLabel: string) => {
     text.setText(nextLabel);
+  };
+
+  container.resize = (nextWidth: number, nextHeight: number) => {
+    glow.setSize(nextWidth + 10, nextHeight + 10);
+    background.setSize(nextWidth, nextHeight);
+    hitZone.setSize(nextWidth, nextHeight);
+    text.setWordWrapWidth(nextWidth - 28);
+    container.setSize(nextWidth, nextHeight);
   };
 
   applyVisualState('default');

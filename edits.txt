@@ -1,0 +1,38 @@
+Opening screen:
+
+1. Triwizard Maze Run is a fine title.
+2. Delete "a dark-fantasy puzzle race through a keyed hedge trial"
+3. In the trial overview box, delete "One readable run. One earned key. One faster replay after another."
+4. Text immediately below trial overview should be centered and read "unlock the golden egg, decode hedge markets with the recovered keyword, and reach the Cup before penalties drag down your time.
+5. Make sure this text doesn't overlap with the "recover" "decode" "beat" boxes. 
+6. Timer note should remain within the Trial Overview box instead of laying on the border of the box and the background.
+7. Button functionality is a little bit clunky. Make sure clicking anywhere within the button advances the screen.
+
+"The Third Trial Awaits"
+
+1. Delete the description immediately below the title.
+2. We need to fix all of these box and test alignments so we don't have overlapping issues. This is an issue with the text in both "trial flow" and "maze primer".
+3. Again issue with button functionality.
+
+"Golden Egg Sequence"
+
+1. Shift the title up a bit to make room for everything else on the screen. The description is fine. 
+2. The run ledger / phase key unlock is directly overlapping and unreadable. Come up with a better timer layout to prevent overlap.
+3. Artifact chamber is mostly fine as a panel. We should shift Runed Egg to the middle-top of the box, put the five runes around the egg. Rune panels should not include descriptions for readability. Just the Rune Title should be displayed and should fill the rune panel. Everything under aligned pedestals is fine but we need to again ensure readability and make sure all empty boxes fit nicely within the artifact chamber background panel.
+4. Omen Cards panel is also mostly fine. "Arrange the runes, then test the omen cards against the egg." text needs to be moved down and made one line for readability but still needs to remain within the Omen Cards background panel. 
+5. After solving the puzzle the key is revealed, which looks clean, except that the now full rune "locked" panels also need to be fixed for readability, maybe only display the two letter initials or a small graphic.
+6. The omen cards resolve into a single harmony. The egg opens and the maze key burns into memory text is fine but needs to be placed down for readability.
+7. All buttons have the same retained issue. Clicking on the top left seems to always work, but I want clicking anywhere within the button to work for all buttons.
+
+Checkpoint I: Thorn Gate
+
+1. Everything hear looks good but needs readability fixing. Better spacing and no overlap, especially on the Cipher Tutorial panel which is a jumbled mess.
+2. Maze Vista can take up less space on the screen so that there's more room for cipher tutorial.
+3. I like that keyboard inputs are supported here. I'm having trouble figuring out how to actually solve the cipher, though. I want to support using the up and down arrow keys to cycle through letters in the selected cell. 
+
+All other checkpoints:
+
+1. Same readability issues +
+2. The main problem here is that the screens are easy to guess your way through without actually solving the cipher because you can look at the number of letters. East has 4, North has 5, etc. Right vs Left works the exact same way. 
+
+Overall: pretty good, we need to massively improve readability, maybe incorporate more graphics and art, make the cipher more clear how to interact with, and prevent easy guessing your way through. 

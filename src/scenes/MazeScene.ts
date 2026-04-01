@@ -8,7 +8,12 @@ import {
   type MazeCheckpoint,
   type MazeChoice
 } from '../data/mazeCheckpoints';
-import { cycleGuessLetter, getKeyStream, getShiftFromKeyLetter } from '../puzzles/mazeCipher';
+import {
+  cycleGuessLetter,
+  cycleGuessLetterBackward,
+  getKeyStream,
+  getShiftFromKeyLetter
+} from '../puzzles/mazeCipher';
 import { runState } from '../systems/RunState';
 import { drawSceneBackdrop } from '../ui/backdrop';
 import { createTextButton, type TextButton } from '../ui/button';
@@ -24,8 +29,29 @@ type DecoderColumnView = {
   guessText: Phaser.GameObjects.Text;
 };
 
-const LEFT_PANEL_BASE = { width: 540, height: 620 };
-const RIGHT_PANEL_BASE = { width: 600, height: 620 };
+const LEFT_PANEL_BASE = { width: 460, height: 620 };
+const RIGHT_PANEL_BASE = { width: 700, height: 620 };
+
+const getCommandMarker = (commandWord: string): string => {
+  switch (commandWord) {
+    case 'LEFT':
+    case 'WEST':
+      return '<';
+    case 'RIGHT':
+    case 'EAST':
+      return '>';
+    case 'FORWARD':
+    case 'NORTH':
+      return '^';
+    case 'SOUTH':
+      return 'v';
+    default:
+      return '?';
+  }
+};
+
+const getChoiceDisplayLabel = (choice: MazeChoice, index: number): string =>
+  `Path ${String.fromCharCode(65 + index)}  [${getCommandMarker(choice.commandWord)}]\n${choice.label}`;
 
 export class MazeScene extends Phaser.Scene {
   private hud!: RunHud;
@@ -96,13 +122,13 @@ export class MazeScene extends Phaser.Scene {
   private createLayout(): void {
     this.titleText = this.add.text(0, 0, '', {
       fontFamily: THEME.fonts.display,
-      fontSize: '50px',
+      fontSize: '48px',
       color: THEME.css.parchment
     });
 
     this.subtitleText = this.add.text(0, 0, '', {
       fontFamily: THEME.fonts.body,
-      fontSize: '22px',
+      fontSize: '21px',
       color: THEME.css.mist,
       lineSpacing: 6
     });
@@ -153,9 +179,9 @@ export class MazeScene extends Phaser.Scene {
     this.leftContent.add(this.previewGraphics);
 
     this.clueText = this.add
-      .text(0, -240, '', {
+      .text(0, -236, '', {
         fontFamily: THEME.fonts.display,
-        fontSize: '64px',
+        fontSize: '56px',
         color: THEME.css.gold,
         align: 'center'
       })
@@ -163,28 +189,28 @@ export class MazeScene extends Phaser.Scene {
     this.decoderBadgeText = this.add
       .text(0, -184, '', {
         fontFamily: THEME.fonts.body,
-        fontSize: '22px',
+        fontSize: '20px',
         color: THEME.css.gold,
         align: 'center'
       })
       .setOrigin(0.5);
     this.decoderHelpText = this.add
-      .text(0, -134, '', {
+      .text(0, -136, '', {
         fontFamily: THEME.fonts.body,
-        fontSize: '20px',
+        fontSize: '19px',
         color: THEME.css.parchment,
         align: 'center',
-        wordWrap: { width: 480 },
+        wordWrap: { width: 560 },
         lineSpacing: 6
       })
       .setOrigin(0.5);
     this.workingDecodeText = this.add
-      .text(0, 118, '', {
+      .text(0, 120, '', {
         fontFamily: THEME.fonts.body,
-        fontSize: '22px',
+        fontSize: '20px',
         color: THEME.css.mist,
         align: 'center',
-        wordWrap: { width: 500 },
+        wordWrap: { width: 560 },
         lineSpacing: 6
       })
       .setOrigin(0.5);
@@ -193,14 +219,14 @@ export class MazeScene extends Phaser.Scene {
 
   private layoutScene(): void {
     const metrics = getSceneLayoutMetrics(this);
-    const hudWidthReserve = Phaser.Math.Clamp(Math.round(metrics.width * 0.28), 320, 420) + metrics.gap;
-    const titleWrapWidth = Math.max(360, metrics.width - metrics.padding * 2 - hudWidthReserve);
+    const hudWidthReserve = Phaser.Math.Clamp(Math.round(metrics.width * 0.26), 300, 392) + metrics.gap;
+    const titleWrapWidth = Math.max(340, metrics.width - metrics.padding * 2 - hudWidthReserve);
 
-    this.titleText.setPosition(metrics.padding, metrics.padding + 16);
-    this.subtitleText.setPosition(metrics.padding, metrics.padding + 64).setWordWrapWidth(titleWrapWidth);
+    this.titleText.setPosition(metrics.padding, metrics.padding + 12);
+    this.subtitleText.setPosition(metrics.padding, metrics.padding + 58).setWordWrapWidth(titleWrapWidth);
 
-    const rightWidthInitial = Phaser.Math.Clamp(Math.round(metrics.usableWidth * 0.5), 500, 660);
-    const leftWidth = Math.max(420, metrics.usableWidth - rightWidthInitial - metrics.gap);
+    const rightWidthInitial = Phaser.Math.Clamp(Math.round(metrics.usableWidth * 0.58), 620, 760);
+    const leftWidth = Math.max(340, metrics.usableWidth - rightWidthInitial - metrics.gap);
     const rightWidth = metrics.usableWidth - leftWidth - metrics.gap;
     const panelHeight = metrics.contentBottom - metrics.contentTop;
     const panelY = metrics.contentTop + panelHeight / 2;
@@ -254,6 +280,20 @@ export class MazeScene extends Phaser.Scene {
 
     if (event.key === 'ArrowRight') {
       this.selectedDecodeIndex = Math.min(this.decodedGuess.length - 1, this.selectedDecodeIndex + 1);
+      this.refreshDecoderGuess();
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      this.decodedGuess[this.selectedDecodeIndex] = cycleGuessLetter(this.decodedGuess[this.selectedDecodeIndex]);
+      this.refreshDecoderGuess();
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      this.decodedGuess[this.selectedDecodeIndex] = cycleGuessLetterBackward(
+        this.decodedGuess[this.selectedDecodeIndex]
+      );
       this.refreshDecoderGuess();
       return;
     }
@@ -335,12 +375,14 @@ export class MazeScene extends Phaser.Scene {
 
     this.titleText.setText(checkpoint.title);
     this.subtitleText.setText(checkpoint.flavorText);
-    this.clueText.setText(checkpoint.ciphertext);
+    this.clueText
+      .setText(checkpoint.ciphertext)
+      .setFontSize(checkpoint.ciphertext.length > 6 ? 52 : checkpoint.ciphertext.length > 5 ? 54 : 56);
     this.rightPanelLabel.setText(index === 0 ? 'Cipher Tutorial' : 'Cipher Marker');
     this.decoderBadgeText.setText(
       index === 0
-        ? 'First marker: learn the decoder on a short route word.'
-        : `${getMazeDifficultyLabel(checkpoint.difficulty)}  |  Key ${runState.getSnapshot().keyWord}`
+        ? 'First marker: decode a short word, then match it to the correct path sign.'
+        : `${getMazeDifficultyLabel(checkpoint.difficulty)} | Key ${runState.getSnapshot().keyWord}`
     );
     this.decoderHelpText.setText(this.getDecoderHelpText());
     this.setFeedbackState('neutral', this.getNeutralFeedbackText(checkpoint));
@@ -365,9 +407,9 @@ export class MazeScene extends Phaser.Scene {
 
     const keyStream = getKeyStream(checkpoint.ciphertext, runState.getSnapshot().keyWord ?? '');
     const count = checkpoint.ciphertext.length;
-    const spacing = count > 5 ? 54 : 62;
+    const spacing = count > 6 ? 52 : count > 5 ? 56 : 62;
     const startX = ((count - 1) * spacing) / -2;
-    const labelX = -228;
+    const labelX = -264;
 
     const labels =
       this.checkpointIndex === 0
@@ -423,7 +465,7 @@ export class MazeScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
       const guessBackground = this.add
-        .rectangle(x, 62, 48, 48, THEME.colors.panelAlt, 0.96)
+        .rectangle(x, 62, 50, 50, THEME.colors.panelAlt, 0.96)
         .setStrokeStyle(2, THEME.colors.gold, 0.35);
       const guessText = this.add
         .text(x, 62, this.decodedGuess[index], {
@@ -435,8 +477,11 @@ export class MazeScene extends Phaser.Scene {
 
       guessBackground.setInteractive();
       guessBackground.on('pointerdown', () => {
-        this.selectedDecodeIndex = index;
-        this.decodedGuess[index] = cycleGuessLetter(this.decodedGuess[index]);
+        if (this.selectedDecodeIndex === index) {
+          this.decodedGuess[index] = cycleGuessLetter(this.decodedGuess[index]);
+        } else {
+          this.selectedDecodeIndex = index;
+        }
         this.refreshDecoderGuess();
       });
 
@@ -467,20 +512,20 @@ export class MazeScene extends Phaser.Scene {
 
     if (exactMatch) {
       this.workingDecodeText.setText(
-        `Working decode: ${workingDecode}\nThe letters now spell a route command. Choose the ${exactMatch.commandWord} path when ready.`
+        `Working decode: ${workingDecode}\nThe command is ready. Choose the matching path sign below.`
       );
       return;
     }
 
     if (this.checkpointIndex === 0 && unresolved) {
       this.workingDecodeText.setText(
-        `Working decode: ${workingDecode}\nFill the short command one letter at a time, then press the matching route button below.`
+        `Working decode: ${workingDecode}\nLeft and Right move between cells. Up and Down or the mouse changes the selected letter.`
       );
       return;
     }
 
     this.workingDecodeText.setText(
-      `Working decode: ${workingDecode}\nChoose the route whose heading matches the command you uncover.`
+      `Working decode: ${workingDecode}\nDecode the command, then choose the path sign whose marker points the same way.`
     );
   }
 
@@ -516,6 +561,7 @@ export class MazeScene extends Phaser.Scene {
         1
       );
       this.previewGraphics.fillCircle(0, y, 20);
+
       if (index < total - 1) {
         this.previewGraphics.lineStyle(4, THEME.colors.gold, 0.22);
         this.previewGraphics.beginPath();
@@ -523,8 +569,9 @@ export class MazeScene extends Phaser.Scene {
         this.previewGraphics.lineTo(index % 2 === 0 ? 30 : -30, y + spacing / 2);
         this.previewGraphics.strokePath();
       }
+
       const label = this.add
-        .text(62, y, `Marker ${index + 1}  •  ${getMazeDifficultyLabel(checkpoint.difficulty)}`, {
+        .text(62, y, `Marker ${index + 1} - ${getMazeDifficultyLabel(checkpoint.difficulty)}`, {
           fontFamily: THEME.fonts.body,
           fontSize: total > 5 ? '20px' : '24px',
           color: isActive ? THEME.css.parchment : THEME.css.mist
@@ -543,10 +590,10 @@ export class MazeScene extends Phaser.Scene {
       const button = createTextButton(
         this,
         0,
-        198 + index * 74,
-        470,
-        62,
-        choice.label,
+        188 + index * 82,
+        538,
+        68,
+        getChoiceDisplayLabel(choice, index),
         () => this.resolveChoice(choice),
         {
           fontSize: '21px'
@@ -565,6 +612,7 @@ export class MazeScene extends Phaser.Scene {
     if (choice.isCorrect) {
       this.interactionLocked = true;
       this.setChoicesEnabled(false);
+
       if (this.currentCheckpoint) {
         runState.recordCheckpointClear(
           this.currentCheckpoint.id,
@@ -572,10 +620,11 @@ export class MazeScene extends Phaser.Scene {
           this.checkpointIndex + 1
         );
       }
+
       this.setFeedbackState(
         'success',
         this.checkpointIndex === 0
-          ? `${choice.feedbackText} You have the decoder rhythm now: read the word, then trust it.`
+          ? `${choice.feedbackText} You have the decoder rhythm now: read the word, then trust the path sign that matches it.`
           : choice.feedbackText
       );
       this.cameras.main.flash(150, 212, 177, 90, false);
@@ -642,21 +691,21 @@ export class MazeScene extends Phaser.Scene {
 
   private getDecoderHelpText(): string {
     if (this.checkpointIndex === 0) {
-      return `Repeat ${runState.getSnapshot().keyWord} under the clue, then move backward by each shown shift.\nWhen the decode row spells a route word, press the matching path button.`;
+      return `Repeat ${runState.getSnapshot().keyWord} under the clue, then move backward by each shown shift.\nMatch the decoded command to the path sign marker below.`;
     }
 
     if (this.checkpointIndex === 1) {
-      return `The second marker still favors clean fundamentals: align ${runState.getSnapshot().keyWord}, subtract each shown shift, and trust the route word you uncover.`;
+      return `The second marker still favors clean fundamentals: align ${runState.getSnapshot().keyWord}, subtract each shown shift, then trust the path sign marker that matches the decoded direction.`;
     }
 
-    return `Repeat ${runState.getSnapshot().keyWord} beneath the clue. For each column, move backward through the alphabet by the shown shift, then choose the matching route.`;
+    return `Repeat ${runState.getSnapshot().keyWord} beneath the clue. For each column, move backward by the shown shift, then choose the path sign that points the same way.`;
   }
 
   private getNeutralFeedbackText(checkpoint: MazeCheckpoint): string {
     if (this.checkpointIndex === 0) {
-      return 'Tutorial marker: use the helper rows to decode the short word, then choose the path with the same heading.';
+      return 'Tutorial marker: decode the short word, then choose the path sign whose marker points the same way.';
     }
 
-    return `Decode the command hidden inside ${checkpoint.ciphertext}, then choose the route whose heading matches it.`;
+    return `Decode the command hidden inside ${checkpoint.ciphertext}, then choose the matching path sign below.`;
   }
 }

@@ -79,21 +79,21 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
       'The first marker glows through the hedge mist. It is short on purpose: one clean decode teaches the rhythm before the maze starts pressing back.',
     correctChoice: {
       id: 'left-arch',
-      label: 'LEFT\nTake the Left Arch',
+      label: 'Briar Arch',
       commandWord: 'LEFT',
       feedbackText: 'The hedge parts and a pale lantern flares deeper in the maze.'
     },
     wrongChoices: [
       {
         id: 'forward-corridor',
-        label: 'FORWARD\nForce the Forward Corridor',
+        label: 'Root Corridor',
         commandWord: 'FORWARD',
         penaltyMs: MAZE_PENALTIES.standard,
         feedbackText: 'The corridor dead-ends in brambles and costs you valuable seconds.'
       },
       {
         id: 'right-turn',
-        label: 'RIGHT\nSlip into the Right Turn',
+        label: 'Lantern Bend',
         commandWord: 'RIGHT',
         penaltyMs: MAZE_PENALTIES.light,
         feedbackText: 'A false passage loops you back toward the checkpoint.'
@@ -109,21 +109,21 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
       'Thick roots brace a narrow lattice bridge. The marker is longer than the first, but still meant to reward steady, straightforward decoding.',
     correctChoice: {
       id: 'forward-lattice',
-      label: 'FORWARD\nCross the Root Lattice',
+      label: 'Lattice Span',
       commandWord: 'FORWARD',
       feedbackText: 'You keep momentum as the lattice settles beneath your stride.'
     },
     wrongChoices: [
       {
         id: 'left-hollow',
-        label: 'LEFT\nDuck into the Left Hollow',
+        label: 'Hollow Niche',
         commandWord: 'LEFT',
         penaltyMs: MAZE_PENALTIES.standard,
         feedbackText: 'The hollow fills with roots and forces a retreat to the marker.'
       },
       {
         id: 'right-bank',
-        label: 'RIGHT\nCut Right Along the Bank',
+        label: 'Slick Bank',
         commandWord: 'RIGHT',
         penaltyMs: MAZE_PENALTIES.standard,
         feedbackText: 'A slick bank crumbles underfoot and leaves you scrambling back.'
@@ -139,21 +139,21 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
       'A moonlit dial hums with cold glyphs. By now the keyword should feel familiar, but the route words are no longer all directional habits from the first lesson.',
     correctChoice: {
       id: 'north-steps',
-      label: 'NORTH\nClimb the Northern Steps',
+      label: 'Moon Steps',
       commandWord: 'NORTH',
       feedbackText: 'The dial swings open and the northern steps carry you into clearer air.'
     },
     wrongChoices: [
       {
         id: 'east-rim',
-        label: 'EAST\nTrace the Eastern Rim',
+        label: 'Silver Rim',
         commandWord: 'EAST',
         penaltyMs: MAZE_PENALTIES.heavy,
         feedbackText: 'A rim of ivy lashes shut and sends you back to the dial.'
       },
       {
         id: 'south-arches',
-        label: 'SOUTH\nDrop Through the Southern Arches',
+        label: 'Arch Hollow',
         commandWord: 'SOUTH',
         penaltyMs: MAZE_PENALTIES.standard,
         feedbackText: 'The arches circle you into a dead hedge pocket.'
@@ -169,21 +169,21 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
       'Floating lanterns mark a fork that looks more trustworthy than it is. The safe route is still readable, but hesitation now costs more.',
     correctChoice: {
       id: 'east-lanterns',
-      label: 'EAST\nFollow the Eastern Lantern Chain',
+      label: 'Lantern Chain',
       commandWord: 'EAST',
       feedbackText: 'The lanterns slide aside and give you a brief, precious burst of speed.'
     },
     wrongChoices: [
       {
         id: 'north-gap',
-        label: 'NORTH\nPush Through the Northern Gap',
+        label: 'Gap Breach',
         commandWord: 'NORTH',
         penaltyMs: MAZE_PENALTIES.heavy,
         feedbackText: 'The gap seals behind you and wastes a long recovery.'
       },
       {
         id: 'west-vines',
-        label: 'WEST\nCut West Beneath the Vines',
+        label: 'Vine Tunnel',
         commandWord: 'WEST',
         penaltyMs: MAZE_PENALTIES.standard,
         feedbackText: 'The vines drag you into a loop and spit you back at the fork.'
@@ -199,21 +199,21 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
       'The hedges narrow into a briar weir where every wrong angle bites back. The clue is fair, but the recovery paths are no longer gentle.',
     correctChoice: {
       id: 'south-breach',
-      label: 'SOUTH\nSlip Through the Southern Breach',
+      label: 'Thorn Breach',
       commandWord: 'SOUTH',
       feedbackText: 'You find the only gap before the thorns can knit shut.'
     },
     wrongChoices: [
       {
         id: 'east-thorns',
-        label: 'EAST\nShoulder into the Eastern Thorns',
+        label: 'Thorn Wall',
         commandWord: 'EAST',
         penaltyMs: MAZE_PENALTIES.severe,
         feedbackText: 'The thorns close around you and exact a brutal delay.'
       },
       {
         id: 'north-wall',
-        label: 'NORTH\nDouble Back Toward the Wall',
+        label: 'Stone Return',
         commandWord: 'NORTH',
         penaltyMs: MAZE_PENALTIES.heavy,
         feedbackText: 'A hedge wall collapses into your path and forces a costly retreat.'
@@ -230,21 +230,21 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
     rewardLetter: 'C',
     correctChoice: {
       id: 'right-final',
-      label: 'RIGHT\nBreak Right Toward the Glow',
+      label: 'Cup Glow',
       commandWord: 'RIGHT',
       feedbackText: 'The final hedge curls back and the Cup comes into view.'
     },
     wrongChoices: [
       {
         id: 'left-detour',
-        label: 'LEFT\nProbe the Left Detour',
+        label: 'Thorn Ring',
         commandWord: 'LEFT',
         penaltyMs: MAZE_PENALTIES.severe,
         feedbackText: 'The detour collapses into a thorn circle and wastes precious time.'
       },
       {
         id: 'forward-listen',
-        label: 'FORWARD\nDrive Straight Through the Murk',
+        label: 'Murk Channel',
         commandWord: 'FORWARD',
         penaltyMs: MAZE_PENALTIES.heavy,
         feedbackText: 'The murk thickens into a false corridor and forces you back.'

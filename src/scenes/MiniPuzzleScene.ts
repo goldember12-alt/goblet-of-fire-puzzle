@@ -117,13 +117,13 @@ export class MiniPuzzleScene extends Phaser.Scene {
   private createLayout(): void {
     this.titleText = this.add.text(0, 0, this.puzzle.title, {
       fontFamily: THEME.fonts.display,
-      fontSize: '54px',
+      fontSize: '50px',
       color: THEME.css.parchment
     });
 
     this.objectiveText = this.add.text(0, 0, this.puzzle.objective, {
       fontFamily: THEME.fonts.body,
-      fontSize: '23px',
+      fontSize: '21px',
       color: THEME.css.mist,
       lineSpacing: 6
     });
@@ -179,24 +179,24 @@ export class MiniPuzzleScene extends Phaser.Scene {
 
     content.add(
       this.add
-        .ellipse(0, -210, 240, 320, THEME.colors.panelAlt, 1)
+        .ellipse(0, -164, 230, 286, THEME.colors.panelAlt, 1)
         .setStrokeStyle(4, THEME.colors.gold, 0.42)
     );
     content.add(
       this.add
-        .ellipse(0, -210, 182, 260, THEME.colors.midnight, 0.94)
+        .ellipse(0, -164, 174, 230, THEME.colors.midnight, 0.94)
         .setStrokeStyle(2, THEME.colors.gold, 0.22)
     );
     content.add(
       this.add
-        .ellipse(0, -240, 100, 130, THEME.colors.gold, 0.12)
+        .ellipse(0, -196, 102, 122, THEME.colors.gold, 0.12)
         .setBlendMode(Phaser.BlendModes.SCREEN)
     );
     content.add(
       this.add
-        .text(0, -220, this.puzzle.artifactName, {
+        .text(0, -254, this.puzzle.artifactName, {
           fontFamily: THEME.fonts.display,
-          fontSize: '34px',
+          fontSize: '36px',
           color: THEME.css.gold,
           align: 'center'
         })
@@ -204,21 +204,21 @@ export class MiniPuzzleScene extends Phaser.Scene {
     );
     content.add(
       this.add
-        .text(0, -146, this.puzzle.interactionHint, {
+        .text(0, -52, this.puzzle.interactionHint, {
           fontFamily: THEME.fonts.body,
-          fontSize: '20px',
+          fontSize: '18px',
           color: THEME.css.mist,
           align: 'center',
-          wordWrap: { width: 410 },
+          wordWrap: { width: 430 },
           lineSpacing: 6
         })
         .setOrigin(0.5)
     );
 
     this.selectedText = this.add
-      .text(0, -34, '', {
+      .text(0, 8, '', {
         fontFamily: THEME.fonts.body,
-        fontSize: '22px',
+        fontSize: '20px',
         color: THEME.css.gold,
         align: 'center'
       })
@@ -226,52 +226,30 @@ export class MiniPuzzleScene extends Phaser.Scene {
     content.add(this.selectedText);
 
     const positions = [
-      { x: -150, y: 54 },
-      { x: 0, y: 54 },
-      { x: 150, y: 54 },
-      { x: -78, y: 146 },
-      { x: 78, y: 146 }
+      { x: -176, y: -136 },
+      { x: 176, y: -136 },
+      { x: -224, y: -14 },
+      { x: 224, y: -14 },
+      { x: 0, y: 116 }
     ];
 
     this.puzzle.fragments.forEach((fragment, index) => {
       const position = positions[index];
       const background = this.add
-        .rectangle(0, 0, 132, 78, THEME.colors.panelAlt, 0.98)
+        .rectangle(0, 0, 136, 56, THEME.colors.panelAlt, 0.98)
         .setStrokeStyle(2, THEME.colors.gold, 0.35);
-      const sigilText = this.add
-        .text(-40, 0, fragment.sigil, {
-          fontFamily: THEME.fonts.display,
-          fontSize: '26px',
-          color: THEME.css.gold
-        })
-        .setOrigin(0.5);
       const labelText = this.add
-        .text(18, -10, fragment.label, {
+        .text(0, 0, fragment.label.replace(' Rune', ''), {
           fontFamily: THEME.fonts.body,
-          fontSize: '18px',
+          fontSize: '19px',
           color: THEME.css.parchment,
           align: 'center',
-          wordWrap: { width: 84 }
+          wordWrap: { width: 106 }
         })
         .setOrigin(0.5);
-      const loreText = this.add
-        .text(18, 18, fragment.lore, {
-          fontFamily: THEME.fonts.body,
-          fontSize: '12px',
-          color: THEME.css.mist,
-          align: 'center',
-          wordWrap: { width: 84 }
-        })
-        .setOrigin(0.5);
-
-      const container = this.add.container(position.x, position.y, [
-        background,
-        sigilText,
-        labelText,
-        loreText
-      ]);
-      container.setSize(132, 78);
-      container.setInteractive(new Phaser.Geom.Rectangle(-66, -39, 132, 78), Phaser.Geom.Rectangle.Contains);
+      const container = this.add.container(position.x, position.y, [background, labelText]);
+      container.setSize(136, 56);
+      container.setInteractive(new Phaser.Geom.Rectangle(-68, -28, 136, 56), Phaser.Geom.Rectangle.Contains);
       container.on('pointerdown', () => this.selectFragment(fragment.id));
       content.add(container);
 
@@ -283,41 +261,41 @@ export class MiniPuzzleScene extends Phaser.Scene {
     });
 
     this.summaryText = this.add
-      .text(0, 224, '', {
+      .text(0, 176, '', {
         fontFamily: THEME.fonts.body,
-        fontSize: '20px',
+        fontSize: '18px',
         color: THEME.css.mist,
         align: 'center'
       })
       .setOrigin(0.5);
     content.add(this.summaryText);
 
-    const startX = -208;
+    const startX = -188;
 
     for (let index = 0; index < this.puzzle.solutionOrder.length; index += 1) {
-      const x = startX + index * 104;
+      const x = startX + index * 94;
       const slotText = this.add
-        .text(x, 246, `Pedestal ${index + 1}`, {
+        .text(x, 214, `Pedestal ${index + 1}`, {
           fontFamily: THEME.fonts.body,
-          fontSize: '17px',
+          fontSize: '15px',
           color: THEME.css.mist
         })
         .setOrigin(0.5);
       const background = this.add
-        .rectangle(x, 304, 92, 104, THEME.colors.panel, 0.94)
+        .rectangle(x, 270, 82, 88, THEME.colors.panel, 0.94)
         .setStrokeStyle(2, THEME.colors.gold, 0.28);
       const fragmentText = this.add
-        .text(x, 302, 'Empty', {
+        .text(x, 264, '---', {
           fontFamily: THEME.fonts.display,
-          fontSize: '21px',
+          fontSize: '24px',
           color: THEME.css.parchment,
           align: 'center'
         })
         .setOrigin(0.5);
       const lockText = this.add
-        .text(x, 340, '', {
+        .text(x, 298, '', {
           fontFamily: THEME.fonts.body,
-          fontSize: '16px',
+          fontSize: '14px',
           color: THEME.css.gold
         })
         .setOrigin(0.5);
@@ -337,9 +315,9 @@ export class MiniPuzzleScene extends Phaser.Scene {
 
   private buildRightContent(): void {
     this.keyRevealText = this.add
-      .text(0, -244, 'Cipher Key Locked', {
+      .text(0, -248, 'Cipher Key Locked', {
         fontFamily: THEME.fonts.display,
-        fontSize: '40px',
+        fontSize: '38px',
         color: THEME.css.gold,
         align: 'center'
       })
@@ -347,17 +325,17 @@ export class MiniPuzzleScene extends Phaser.Scene {
     this.rightContent.add(this.keyRevealText);
 
     this.puzzle.rules.forEach((rule, index) => {
-      const y = -130 + index * 92;
+      const y = -134 + index * 78;
       const background = this.add
-        .rectangle(0, y, 470, 76, THEME.colors.panelAlt, 0.96)
+        .rectangle(0, y, 474, 64, THEME.colors.panelAlt, 0.96)
         .setStrokeStyle(2, THEME.colors.gold, 0.28);
       const text = this.add
         .text(0, y, rule.description, {
           fontFamily: THEME.fonts.body,
-          fontSize: '21px',
+          fontSize: '19px',
           color: THEME.css.parchment,
           align: 'center',
-          wordWrap: { width: 420 }
+          wordWrap: { width: 424 }
         })
         .setOrigin(0.5);
 
@@ -368,14 +346,14 @@ export class MiniPuzzleScene extends Phaser.Scene {
     this.statusText = this.add
       .text(
         0,
-        206,
+        188,
         'Arrange the runes, then test the omen cards against the egg.',
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '23px',
+          fontSize: '21px',
           color: THEME.css.parchment,
           align: 'center',
-          wordWrap: { width: 430 },
+          wordWrap: { width: 440 },
           lineSpacing: 8
         }
       )
@@ -388,9 +366,9 @@ export class MiniPuzzleScene extends Phaser.Scene {
     const hudWidthReserve = Phaser.Math.Clamp(Math.round(metrics.width * 0.28), 320, 420) + metrics.gap;
     const titleWrapWidth = Math.max(380, metrics.width - metrics.padding * 2 - hudWidthReserve);
 
-    this.titleText.setPosition(metrics.padding, metrics.padding + 12);
+    this.titleText.setPosition(metrics.padding, metrics.padding + 2);
     this.objectiveText
-      .setPosition(metrics.padding, metrics.padding + 66)
+      .setPosition(metrics.padding, metrics.padding + 46)
       .setWordWrapWidth(titleWrapWidth);
 
     const leftWidthInitial = Phaser.Math.Clamp(Math.round(metrics.usableWidth * 0.55), 500, 720);
@@ -433,16 +411,7 @@ export class MiniPuzzleScene extends Phaser.Scene {
       { button: this.enterMazeButton, width: buttonWidths[3], height: buttonHeights[3], x: positions[3] }
     ].forEach(({ button, width, height, x }) => {
       button.setPosition(x, buttonY);
-      const background = button.list[1] as Phaser.GameObjects.Rectangle;
-      const glow = button.list[0] as Phaser.GameObjects.Rectangle;
-      const text = button.list[2] as Phaser.GameObjects.Text;
-      background.setSize(width, height);
-      glow.setSize(width + 10, height + 10);
-      text.setWordWrapWidth(width - 28);
-      button.setSize(width, height);
-      if (button.input?.hitArea instanceof Phaser.Geom.Rectangle) {
-        button.input.hitArea.setTo(-width / 2, -height / 2, width, height);
-      }
+      button.resize(width, height);
     });
   }
 
@@ -618,7 +587,7 @@ export class MiniPuzzleScene extends Phaser.Scene {
         0.96
       );
       view.background.setStrokeStyle(2, THEME.colors.gold, locked ? 0.72 : fragment ? 0.5 : 0.28);
-      view.fragmentText.setText(fragment ? `${fragment.sigil}\n${fragment.label}` : 'Empty');
+      view.fragmentText.setText(fragment ? fragment.sigil : '---');
       view.fragmentText.setColor(fragment ? THEME.css.parchment : THEME.css.mist);
       view.lockText.setText(locked ? 'Locked' : '');
 

@@ -11,7 +11,6 @@ const FEATURE_PANEL_BASE = { width: 980, height: 390 };
 
 export class TitleScene extends Phaser.Scene {
   private titleText!: Phaser.GameObjects.Text;
-  private subtitleText!: Phaser.GameObjects.Text;
   private featurePanel!: Phaser.GameObjects.Rectangle;
   private featureLabel!: Phaser.GameObjects.Text;
   private featureContent!: Phaser.GameObjects.Container;
@@ -35,18 +34,6 @@ export class TitleScene extends Phaser.Scene {
       stroke: '#3e2c10',
       strokeThickness: 3
     });
-
-    this.subtitleText = this.add.text(
-      0,
-      0,
-      'A dark-fantasy puzzle race through a keyed hedge trial',
-      {
-        fontFamily: THEME.fonts.body,
-        fontSize: '28px',
-        color: THEME.css.mist,
-        lineSpacing: 6
-      }
-    );
 
     this.featurePanel = this.add
       .rectangle(0, 0, FEATURE_PANEL_BASE.width, FEATURE_PANEL_BASE.height, THEME.colors.panel, 0.92)
@@ -88,26 +75,17 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private buildFeatureContent(): void {
-    const overline = this.add
-      .text(0, -148, 'One readable run. One earned key. One faster replay after another.', {
-        fontFamily: THEME.fonts.body,
-        fontSize: '24px',
-        color: THEME.css.gold,
-        align: 'center'
-      })
-      .setOrigin(0.5);
-
     const pitch = this.add
       .text(
         0,
-        -88,
-        'Unlock the Golden Egg, decode hedge markers with the recovered keyword, and reach the Cup before penalties drag down your time.',
+        -126,
+        'Unlock the Golden Egg, decode the hedge markers, and race the maze cleanly enough to reach the Cup.',
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '28px',
+          fontSize: '29px',
           color: THEME.css.parchment,
           align: 'center',
-          wordWrap: { width: 820 },
+          wordWrap: { width: 760 },
           lineSpacing: 8
         }
       )
@@ -117,26 +95,26 @@ export class TitleScene extends Phaser.Scene {
       {
         x: -300,
         title: 'Recover the Key',
-        body: 'Solve the rune sequence to earn the keyword that makes the maze readable.'
+        body: 'Solve the Golden Egg sequence and reveal the keyword that unlocks the maze.'
       },
       {
         x: 0,
         title: 'Decode Fast',
-        body: 'Use the key and shift aid to turn each marker into a short route command.'
+        body: 'Use the recovered key and the shift helper to turn each marker into a route command.'
       },
       {
         x: 300,
         title: 'Beat the Clock',
-        body: 'Wrong turns and hints cost time, so a clean run matters as much as a correct one.'
+        body: 'Wrong turns and hints cost time, so the best runs are both correct and efficient.'
       }
     ];
 
     cards.forEach((card) => {
       const background = this.add
-        .rectangle(card.x, 48, 264, 186, THEME.colors.panelAlt, 0.96)
+        .rectangle(card.x, 56, 264, 184, THEME.colors.panelAlt, 0.96)
         .setStrokeStyle(2, THEME.colors.gold, 0.28);
       const title = this.add
-        .text(card.x, -4, card.title, {
+        .text(card.x, 0, card.title, {
           fontFamily: THEME.fonts.display,
           fontSize: '30px',
           color: THEME.css.parchment,
@@ -144,12 +122,12 @@ export class TitleScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
       const body = this.add
-        .text(card.x, 70, card.body, {
+        .text(card.x, 72, card.body, {
           fontFamily: THEME.fonts.body,
-          fontSize: '20px',
+          fontSize: '19px',
           color: THEME.css.mist,
           align: 'center',
-          wordWrap: { width: 214 },
+          wordWrap: { width: 220 },
           lineSpacing: 6
         })
         .setOrigin(0.5);
@@ -157,7 +135,7 @@ export class TitleScene extends Phaser.Scene {
       this.featureContent.add([background, title, body]);
     });
 
-    this.featureContent.add([overline, pitch]);
+    this.featureContent.add(pitch);
   }
 
   private layoutScene(): void {
@@ -174,10 +152,6 @@ export class TitleScene extends Phaser.Scene {
     );
 
     this.titleText.setPosition(metrics.width / 2, metrics.padding + 22).setOrigin(0.5);
-    this.subtitleText
-      .setPosition(metrics.width / 2, metrics.padding + 90)
-      .setOrigin(0.5)
-      .setWordWrapWidth(Math.min(900, metrics.usableWidth - 80));
 
     this.featurePanel.setPosition(metrics.width / 2, panelY).setSize(panelWidth, panelHeight);
     this.featureLabel.setPosition(metrics.width / 2 - panelWidth / 2 + 18, panelY - panelHeight / 2 + 14);
@@ -185,8 +159,8 @@ export class TitleScene extends Phaser.Scene {
 
     this.briefingButton.setPosition(metrics.width / 2, metrics.height - metrics.padding - 46);
     this.footerText
-      .setPosition(metrics.width / 2, metrics.height - metrics.padding - 102)
+      .setPosition(metrics.width / 2, panelY + panelHeight / 2 - 28)
       .setOrigin(0.5)
-      .setWordWrapWidth(Math.min(860, metrics.usableWidth - 60));
+      .setWordWrapWidth(Math.min(panelWidth - 70, 820));
   }
 }
