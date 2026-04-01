@@ -1,86 +1,89 @@
 # Current Stage
 
-## Implemented In This Pass
-- Applied a readability and interaction polish pass across the title, intro, mini-puzzle, and maze scenes.
-- Treated the user-provided scene-by-scene review notes as the main task list because `edits.txt` exists but is currently empty in the workspace.
-- Removed extra top-of-screen copy where requested, tightened panel spacing, and reduced overlap pressure in the opening and intro scenes.
-- Reworked the Golden Egg scene to create more breathing room:
-  - raised the title/objective block,
-  - tightened the Run Ledger header stack through shared HUD updates,
-  - simplified rune cards to title-only buttons,
-  - repositioned the rune ring around the egg,
-  - made pedestal slots more compact and readable,
-  - and lowered the explanatory solve/status copy for better legibility.
-- Rebalanced the maze layout so the decoder workspace has more room and the Maze Vista panel takes less space.
-- Added clearer keyboard guidance and support for `Up` / `Down` letter cycling in the maze decoder.
-- Removed the easiest answer-length shortcut by changing maze route buttons to standardized path-sign labels with symbol markers instead of visibly exposing full command words.
-- Fixed button interaction so the visible button body now matches the actual clickable area across scenes.
+## Review Source Used For This Pass
+- Treated [`edits(2).txt`](../edits(2).txt) as the primary review punch list for this pass.
+- Re-read `AGENTS.md`, every file in `/docs`, `progress/current-stage.md`, the current scene files, shared UI/layout helpers, cipher logic, and rune/artifact data before editing.
 
-## Key Files To Inspect
-- `src/ui/button.ts`
+## Issues Addressed From The Newest Edits File
+- Intro wording and alignment:
+  - removed the clunky `First marker onboarding` phrasing,
+  - changed `solve the artifact` language to `solve the egg`,
+  - tightened the Trial Flow stack so the numbered bubbles and text align more cleanly,
+  - and compressed the Trial Flow layout so the third step no longer relies on overflow-prone spacing.
+- Cipher primer correction:
+  - replaced the contradictory primer example with a mathematically consistent one that matches the actual Vigenere-style implementation,
+  - switched the displayed helper from signed subtraction text to a clearer `Back` row,
+  - and added an explicit `A = 0` note so the shift math is understandable.
+- Persistent HUD overlap:
+  - increased global header/footer reserves in `src/ui/layout.ts`,
+  - rebuilt `RunHud` into a tighter stacked layout,
+  - shortened ledger copy so the phase, timer, key, and meta lines stay inside the HUD panel across scenes.
+- Artifact Chamber layout:
+  - made the egg larger and more central,
+  - pushed Omen Cards farther right and gave the chamber more width,
+  - arranged rune panels around the egg in a more intentional surround layout,
+  - moved selected-fragment and instruction text away from the crowded lower chamber,
+  - and kept the button hit area aligned with the full visible rune card.
+- Rune presentation:
+  - added simple icon identifiers to rune data,
+  - showed each rune as an icon + name + sigil card instead of text-only strips,
+  - and preserved full-panel click targets for every rune fragment.
+- Maze readability:
+  - condensed the Maze Vista panel footprint and gave the cipher workspace more width,
+  - rebuilt the decoder area so labels, columns, helper text, and route controls remain separated,
+  - and resized/repositioned results content so the replay goal no longer crowds the summary content.
+- Guessing reduction:
+  - route plaques no longer expose direct direction labels,
+  - route plaques stay disabled until the player fills the decode row and presses `Confirm Decode`,
+  - incorrect decode submissions now cost time,
+  - and the player must meaningfully use the cipher before route selection becomes available.
+- Maze feel:
+  - replaced the old straight progress-strip feel with a branching chamber preview,
+  - made route choices appear as separate hedge branches with disguised plaques,
+  - and adjusted checkpoint flavor text to frame each stop as a junction rather than a straight hallway.
+
+## Files Changed Most
+- `src/ui/layout.ts`
 - `src/ui/runHud.ts`
-- `src/scenes/TitleScene.ts`
 - `src/scenes/IntroScene.ts`
 - `src/scenes/MiniPuzzleScene.ts`
 - `src/scenes/MazeScene.ts`
+- `src/scenes/ResultsScene.ts`
 - `src/data/mazeCheckpoints.ts`
-- `src/puzzles/mazeCipher.ts`
+- `src/puzzles/runeSequencePuzzle.ts`
 
-## How To Run Locally
-1. From the repo root, run `npm install` if dependencies are not installed yet.
-2. Start local development with `npm run dev`.
-3. Open the Vite URL shown in the terminal, usually `http://127.0.0.1:5173`.
+## What Was Done To Eliminate Overlap
+- Expanded the shared header and footer safe areas so title stacks, HUD panels, play panels, and footer feedback no longer compete for the same vertical space.
+- Compressed Run Ledger copy into shorter two-line summaries and repositioned the internal text stack to keep it inside the panel.
+- Reflowed intro, mini-puzzle, maze, and results compositions so decorative elements give way to readable text and interaction space.
+- Shifted the egg-chamber selection text out of the crowded lower ring area and kept the Omen Cards/status region in its own smaller right-side panel.
+- Increased the breathing room between maze decoder text, confirmation flow, route plaques, and footer feedback.
 
-## Verification Note
-- `tsc --noEmit` passes in this environment.
-- Full Vite execution is still blocked in this sandbox by the existing `esbuild` child-process `spawn EPERM` restriction, so browser verification still needs to happen locally.
+## What Was Done To Clarify The Cipher Tutorial
+- Aligned the intro primer with the real implementation in `src/puzzles/mazeCipher.ts`.
+- Replaced the broken `R C M M` example with `E V N P`, which correctly decodes to `L E F T` using the first four letters of `TRIWIZARD`.
+- Clarified that the helper values are backward shifts derived from key letters with `A = 0`.
+- Updated maze tutorial copy so the intended flow is now:
+  - fill the decoder row,
+  - confirm the decode,
+  - then choose the matching branch.
 
-## What Was Addressed From The Review Notes
-- Opening / title screen:
-  - removed the extra subtitle line under the title,
-  - removed the extra overview overline,
-  - replaced the main centered overview sentence,
-  - kept the timer note inside the Trial Overview panel,
-  - and relied on the new shared button hit-zone fix.
-- Intro screen:
-  - removed the extra description line below the title,
-  - tightened Trial Flow and Maze Primer content,
-  - reduced crowding inside both panels,
-  - and updated the primer to explain keyboard controls more clearly.
-- Golden Egg screen:
-  - shifted the title/objective stack upward,
-  - improved Run Ledger spacing through `RunHud`,
-  - centered and simplified the egg chamber layout,
-  - reduced rune-card text to just the rune titles,
-  - simplified pedestal content to initials,
-  - improved Omen Card spacing,
-  - and made solved-state copy easier to read.
-- Maze:
-  - reduced the Maze Vista footprint,
-  - expanded the cipher workspace,
-  - improved tutorial readability at Thorn Gate,
-  - added `Up` / `Down` decoder cycling,
-  - and changed route-choice presentation so answer length is no longer the obvious shortcut.
+## What Was Done To Reduce Guessing And Improve Maze Feel
+- Added per-checkpoint `Confirm Decode` gating so route selection is not available before the cipher is actually engaged with.
+- Added a decode-failure time penalty to make brute-force guessing materially worse.
+- Reworked route presentation from obvious directional buttons to disguised route plaques with randomized sigils.
+- Restructured `src/data/mazeCheckpoints.ts` to build checkpoints through `buildMazeRunCheckpoints()`, which now supports per-run randomized disguised route markers.
+- Updated the maze preview to show a branching chamber with multiple plausible exits instead of a simple straight-line progress path.
 
-## Button Hit Area Fix
-- Buttons now use an internal invisible hit-zone rectangle inside the visible button body instead of relying on the container’s old input region alone.
-- Hover, press, enable/disable, and resized button states all use that same hit zone.
-- This makes the visible button surface match the clickable area more reliably in the title, intro, mini-puzzle, maze, and results scenes.
+## Remaining Unresolved Or Risky Items
+- This shell session does not currently have `node`/`npm` available on PATH, so I could not run `tsc --noEmit` or a local Vite build after the edits. This pass was manually reviewed in-source, but browser verification is still required.
+- The new randomized sigil system is a preparation step and a first implementation, not a final content-rich disguise layer yet.
+- Checkpoint variety beyond cipher solving is still only architectural preparation; no new Goblet-themed checkpoint minigames were added in this pass.
+- Final visual polish, animation balancing, and direct browser playtest tuning are still needed, especially for smaller desktop windows.
 
-## Anti-Guessing Change
-- Maze choices no longer display the full decoded command word on the button.
-- Instead, route buttons now use a standardized `Path A/B/C` style plus a compact direction marker such as `<`, `>`, `^`, or `v`.
-- The player still has enough information to act fairly after decoding, but cannot bypass the cipher simply by counting the visible answer lengths on the buttons.
-
-## What Still Feels Rough
-- `edits.txt` itself is empty, so this pass used the explicit review bullets from the task prompt rather than file-specific line edits.
-- The game is much cleaner to read now, but some final typography tuning and decorative art polish still remain.
-- The maze decoder helper is clearer and fairer, but it is still a lightweight prototype UI rather than a final-production interface.
-- The results screen did not need major structural changes this pass, so most polish energy stayed on active-play scenes.
-
-## Recommended Next Step
-Run another hands-on playtest pass focused on:
-- validating the new path-sign system against real player intuition,
-- checking whether any scene still crowds at smaller desktop sizes,
-- tuning any remaining text sizes or panel spacing after direct use,
-- then moving into atmosphere and presentation polish once the input/readability issues feel settled.
+## Recommended Next Milestone
+- Run a fresh hands-on browser playtest focused on:
+  - confirming there is no remaining panel/text overlap at common desktop sizes,
+  - validating that the new decode-confirm-route flow meaningfully reduces guessing without feeling tedious,
+  - tuning the egg-chamber and maze typography after real use,
+  - then planning the next checkpoint milestone around richer disguised hints and optional non-cipher checkpoint variety.

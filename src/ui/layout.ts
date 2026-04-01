@@ -20,8 +20,8 @@ export const getSceneLayoutMetrics = (
   const { width, height } = scene.scale;
   const padding = Phaser.Math.Clamp(Math.round(width * 0.03), 22, 42);
   const gap = Phaser.Math.Clamp(Math.round(width * 0.016), 16, 28);
-  const headerHeight = Phaser.Math.Clamp(Math.round(height * 0.16), 126, 156);
-  const footerHeight = Phaser.Math.Clamp(Math.round(height * 0.12), 96, 124);
+  const headerHeight = Phaser.Math.Clamp(Math.round(height * 0.19), 152, 184);
+  const footerHeight = Phaser.Math.Clamp(Math.round(height * 0.135), 108, 138);
 
   return {
     width,
@@ -34,7 +34,7 @@ export const getSceneLayoutMetrics = (
     contentBottom: height - padding - footerHeight,
     usableWidth: width - padding * 2,
     usableHeight: height - padding * 2,
-    isCompact: width < 1260 || height < 820
+    isCompact: width < 1360 || height < 860
   };
 };
 

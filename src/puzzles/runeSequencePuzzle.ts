@@ -4,6 +4,7 @@ export type RuneFragment = {
   id: string;
   label: string;
   sigil: string;
+  icon: string;
   lore: string;
 };
 
@@ -59,30 +60,35 @@ export const runeSequencePuzzle: RuneSequencePuzzle = {
       id: 'mist',
       label: 'Mist Rune',
       sigil: 'MI',
+      icon: '~',
       lore: 'Veils the chamber in silver haze.'
     },
     {
       id: 'crown',
       label: 'Crown Rune',
       sigil: 'CR',
+      icon: 'A',
       lore: 'Marks the path of command.'
     },
     {
       id: 'ember',
       label: 'Ember Rune',
       sigil: 'EM',
+      icon: '*',
       lore: 'Glows with stored heat.'
     },
     {
       id: 'thorn',
       label: 'Thorn Rune',
       sigil: 'TH',
+      icon: 'X',
       lore: 'Fastens wards into place.'
     },
     {
       id: 'moon',
       label: 'Moon Rune',
       sigil: 'MO',
+      icon: 'O',
       lore: 'Reflects the final gleam.'
     }
   ],

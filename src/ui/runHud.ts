@@ -22,7 +22,7 @@ export class RunHud {
 
     this.labelText = scene.add.text(0, 0, 'Run Ledger', {
       fontFamily: THEME.fonts.body,
-      fontSize: '20px',
+      fontSize: '18px',
       color: THEME.css.gold,
       fontStyle: 'bold'
     });
@@ -30,24 +30,24 @@ export class RunHud {
     this.phaseText = scene.add
       .text(0, 0, phaseLabel, {
         fontFamily: THEME.fonts.body,
-        fontSize: '18px',
+        fontSize: '16px',
         color: THEME.css.mist,
         fontStyle: 'bold'
       })
-      .setOrigin(0, 0.5);
+      .setOrigin(1, 0.5);
 
     this.timerText = scene.add
       .text(0, 0, '00:00.0', {
         fontFamily: THEME.fonts.display,
-        fontSize: '36px',
+        fontSize: '34px',
         color: THEME.css.parchment
       })
-      .setOrigin(0, 0.5);
+      .setOrigin(0.5, 0.5);
 
     this.keyText = scene.add
-      .text(0, 0, 'Key: Locked', {
+      .text(0, 0, 'Key Locked', {
         fontFamily: THEME.fonts.body,
-        fontSize: '18px',
+        fontSize: '16px',
         color: THEME.css.gold
       })
       .setOrigin(0, 0.5);
@@ -55,11 +55,12 @@ export class RunHud {
     this.metaText = scene.add
       .text(0, 0, '', {
         fontFamily: THEME.fonts.body,
-        fontSize: '16px',
+        fontSize: '15px',
         color: THEME.css.mist,
+        lineSpacing: 3,
         wordWrap: { width: 320 }
       })
-      .setOrigin(0, 0.5);
+      .setOrigin(0, 0);
 
     this.layout();
 
@@ -74,31 +75,33 @@ export class RunHud {
     const snapshot = runState.getSnapshot();
     const metaText =
       snapshot.phase === 'mini-puzzle'
-        ? `Penalties ${formatPenalty(snapshot.penaltyMs)}  |  Hints ${snapshot.hintsUsed}  |  Attempts ${snapshot.miniPuzzleAttempts}`
-        : `Penalties ${formatPenalty(snapshot.penaltyMs)}  |  Hints ${snapshot.hintsUsed}  |  Wrong turns ${snapshot.wrongTurns}  |  ${
+        ? `Penalty ${formatPenalty(snapshot.penaltyMs)}  |  Hints ${snapshot.hintsUsed}\nAttempts ${snapshot.miniPuzzleAttempts}`
+        : `Penalty ${formatPenalty(snapshot.penaltyMs)}  |  Wrong ${snapshot.wrongTurns}  |  Hints ${snapshot.hintsUsed}\n${
             snapshot.totalCheckpoints > 0
-              ? `${snapshot.currentCheckpoint}/${snapshot.totalCheckpoints} checkpoints`
+              ? `Marker ${snapshot.currentCheckpoint}/${snapshot.totalCheckpoints}`
               : 'Awaiting maze entry'
           }`;
 
     this.timerText.setText(formatDuration(snapshot.elapsedMs));
-    this.keyText.setText(`Key: ${snapshot.keyWord ?? 'Locked'}`);
+    this.keyText.setText(snapshot.keyWord ? `Key ${snapshot.keyWord}` : 'Key Locked');
     this.metaText.setText(metaText);
   }
 
   private layout(): void {
     const metrics = getSceneLayoutMetrics(this.scene);
-    const panelWidth = Phaser.Math.Clamp(Math.round(metrics.width * 0.26), 300, 392);
-    const panelHeight = metrics.isCompact ? 148 : 160;
+    const panelWidth = Phaser.Math.Clamp(Math.round(metrics.width * 0.24), 320, 370);
+    const panelHeight = metrics.isCompact ? 142 : 152;
     const panelX = metrics.width - metrics.padding - panelWidth / 2;
     const panelY = metrics.padding + panelHeight / 2;
-    const textLeft = panelX - panelWidth / 2 + 18;
+    const panelTop = panelY - panelHeight / 2;
+    const textLeft = panelX - panelWidth / 2 + 16;
+    const textRight = panelX + panelWidth / 2 - 16;
 
     this.panel.setPosition(panelX, panelY).setSize(panelWidth, panelHeight);
-    this.labelText.setPosition(textLeft, panelY - panelHeight / 2 + 14);
-    this.phaseText.setPosition(textLeft, panelY - 40);
-    this.timerText.setPosition(textLeft, panelY - 8);
-    this.keyText.setPosition(textLeft, panelY + 26);
-    this.metaText.setPosition(textLeft, panelY + 54).setWordWrapWidth(panelWidth - 34);
+    this.labelText.setPosition(textLeft, panelTop + 18).setOrigin(0, 0.5);
+    this.phaseText.setPosition(textRight, panelTop + 18);
+    this.timerText.setPosition(panelX, panelTop + 56);
+    this.keyText.setPosition(textLeft, panelTop + 92);
+    this.metaText.setPosition(textLeft, panelTop + 108).setWordWrapWidth(panelWidth - 32);
   }
 }

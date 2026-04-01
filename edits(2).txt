@@ -1,0 +1,42 @@
+1. First screen looks good now.
+2. Button functionality seems fixed.
+
+Second screen:
+3. Maze primer seems good, except what does first market onboarding mean? That's a bit of a clunky description in my opinion. The box below it is an excellent improvement, though. 
+4. Trial flow box is fine, except the bubbles don't exactly align with corresponding text and text spills out of the bottom of the trial flow background panel. Also, solve the artifact should be solve the egg.
+5. If the key is T R I W, shouldn't the shift be 20, 18, 9, 23?
+
+R-19= 18-19 = -1 = Z.
+C-17= 3-17 = -14 = M.
+M-8= 13-8 = 5 = E.
+M-22= 13-22 = -9 = P.
+
+R-20=-2=Y
+C-18=-15=L
+M-9=4=D
+M-23=Q
+
+Neither shift appears to work so the cipher is unclear.
+6. Run ledger and phase 1: key unlock boxes still overlap and are unreadable. This is true for all screens after this.
+7. Omen cards panel is perfectly fine, but can be made smaller and pushed to the right side of the screen so Artifact chamber has more space.
+8. The Artifact Chamber needs work. The stuff at the bottom is better initially, but I want the egg bigger and more centered, and the rune should actually surround the egg. The "click a rune fragment to select it" box should be moved somewhere else in the panel. The selected fragment: none should also be moved. We want to ensure no overlap among elements and clear readability + centered egg with surrounding rune panels (which don't have properly implemented button functionality). 
+
+Checkpoint 1:
+
+1. Maze vista is again good but can be condensed to the right side of the screen slightly to make more space for the cipher panels on the right. 
+2. Cipher functionality is good but is still slightly unreadable + path boxes extend beyond Cipher Tutorial box. 
+
+All other checkpoints:
+1. Same readability issues. Final screen the "replay goal:" text is unreadable due to overlapping with 6. Cup Glow.
+
+Some structural issues:
+1. I still just completely guessed my way through the cipher. 
+2. Runes should have icons.
+3. The "maze" isn't visually so much of a maze as it is a straight path.
+
+Big design change:
+1. I want the key puzzle to be the same for all players, but the cipher directional hints should be randomly generated and need to be disguised.
+2. Maybe we can add minigames or some other gameplay that isn't just solving a cipher (harry potter and the goblet of fire themed) in between or as a part of checkpoints.
+
+Most important:
+NEED READABILITY AND NO OVERLAP IN PANELS/TEXT.

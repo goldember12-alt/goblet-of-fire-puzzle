@@ -6,6 +6,12 @@ import {
 } from './runConfig';
 import { encodeWithKey } from '../puzzles/mazeCipher';
 
+export type RouteSigil = {
+  id: string;
+  title: string;
+  icon: string;
+};
+
 export type MazeChoice = {
   id: string;
   label: string;
@@ -13,6 +19,7 @@ export type MazeChoice = {
   isCorrect: boolean;
   penaltyMs?: number;
   feedbackText: string;
+  routeSigil: RouteSigil;
 };
 
 export type MazeCheckpoint = {
@@ -45,38 +52,25 @@ type CheckpointSpec = {
   wrongChoices: ChoiceSpec[];
 };
 
-const encodeCheckpointCommand = (decodedCommand: string): string =>
-  encodeWithKey(decodedCommand, DEFAULT_KEYWORD);
+type RandomSource = () => number;
 
-const createCheckpoint = (spec: CheckpointSpec): MazeCheckpoint => ({
-  id: spec.id,
-  title: spec.title,
-  difficulty: spec.difficulty,
-  decodedCommand: spec.decodedCommand,
-  ciphertext: encodeCheckpointCommand(spec.decodedCommand),
-  flavorText: spec.flavorText,
-  rewardLetter: spec.rewardLetter,
-  choices: [
-    {
-      ...spec.correctChoice,
-      commandWord: spec.decodedCommand,
-      isCorrect: true
-    },
-    ...spec.wrongChoices.map((choice) => ({
-      ...choice,
-      isCorrect: false
-    }))
-  ]
-});
+const ROUTE_SIGILS: RouteSigil[] = [
+  { id: 'thorn-knot', title: 'Thorn Knot', icon: 'X' },
+  { id: 'moon-arc', title: 'Moon Arc', icon: 'O' },
+  { id: 'ember-spark', title: 'Ember Spark', icon: '*' },
+  { id: 'mist-wave', title: 'Mist Wave', icon: '~' },
+  { id: 'crown-spire', title: 'Crown Spire', icon: 'A' },
+  { id: 'stone-seal', title: 'Stone Seal', icon: '#' }
+];
 
-export const mazeCheckpoints: MazeCheckpoint[] = [
-  createCheckpoint({
+const checkpointSpecs: CheckpointSpec[] = [
+  {
     id: 'thorn-gate',
     title: 'Checkpoint I: Thorn Gate',
     difficulty: 'tutorial',
     decodedCommand: 'LEFT',
     flavorText:
-      'The first marker glows through the hedge mist. It is short on purpose: one clean decode teaches the rhythm before the maze starts pressing back.',
+      'A hedge gate splits around a thorn-choked center. This first marker is short on purpose: read it cleanly, then trust the branch that opens on that side.',
     correctChoice: {
       id: 'left-arch',
       label: 'Briar Arch',
@@ -99,14 +93,14 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
         feedbackText: 'A false passage loops you back toward the checkpoint.'
       }
     ]
-  }),
-  createCheckpoint({
+  },
+  {
     id: 'root-lattice',
     title: 'Checkpoint II: Root Lattice',
     difficulty: 'opening',
     decodedCommand: 'FORWARD',
     flavorText:
-      'Thick roots brace a narrow lattice bridge. The marker is longer than the first, but still meant to reward steady, straightforward decoding.',
+      'Twisted roots knot into a lattice junction with two tempting escapes and one true lane through the center.',
     correctChoice: {
       id: 'forward-lattice',
       label: 'Lattice Span',
@@ -129,14 +123,14 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
         feedbackText: 'A slick bank crumbles underfoot and leaves you scrambling back.'
       }
     ]
-  }),
-  createCheckpoint({
+  },
+  {
     id: 'moon-dial',
     title: 'Checkpoint III: Moon Dial',
     difficulty: 'opening',
     decodedCommand: 'NORTH',
     flavorText:
-      'A moonlit dial hums with cold glyphs. By now the keyword should feel familiar, but the route words are no longer all directional habits from the first lesson.',
+      'Three hedge corridors gather around a moon dial, but only the northern cut stays open once the glyphs finish turning.',
     correctChoice: {
       id: 'north-steps',
       label: 'Moon Steps',
@@ -159,14 +153,14 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
         feedbackText: 'The arches circle you into a dead hedge pocket.'
       }
     ]
-  }),
-  createCheckpoint({
+  },
+  {
     id: 'lantern-fork',
     title: 'Checkpoint IV: Lantern Fork',
     difficulty: 'pressure',
     decodedCommand: 'EAST',
     flavorText:
-      'Floating lanterns mark a fork that looks more trustworthy than it is. The safe route is still readable, but hesitation now costs more.',
+      'Lanterns hang over a fork that looks wider than it is. One branch cuts east through the hedge wall while the others fold into traps.',
     correctChoice: {
       id: 'east-lanterns',
       label: 'Lantern Chain',
@@ -189,14 +183,14 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
         feedbackText: 'The vines drag you into a loop and spit you back at the fork.'
       }
     ]
-  }),
-  createCheckpoint({
+  },
+  {
     id: 'briar-weir',
     title: 'Checkpoint V: Briar Weir',
     difficulty: 'pressure',
     decodedCommand: 'SOUTH',
     flavorText:
-      'The hedges narrow into a briar weir where every wrong angle bites back. The clue is fair, but the recovery paths are no longer gentle.',
+      'The weir narrows into a tight knot of hedges with only one southern breach before the thorns knit shut again.',
     correctChoice: {
       id: 'south-breach',
       label: 'Thorn Breach',
@@ -219,14 +213,14 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
         feedbackText: 'A hedge wall collapses into your path and forces a costly retreat.'
       }
     ]
-  }),
-  createCheckpoint({
+  },
+  {
     id: 'cup-glow',
     title: 'Checkpoint VI: Cup Glow',
     difficulty: 'finale',
     decodedCommand: 'RIGHT',
     flavorText:
-      'A distant gold light leaks through the last corridor. The final marker is short again, but now the pressure comes from knowing one clean read will end the run.',
+      'A distant cup-glow leaks through the final hedge chamber. One clean read reveals the last rightward break in the maze.',
     rewardLetter: 'C',
     correctChoice: {
       id: 'right-final',
@@ -250,8 +244,59 @@ export const mazeCheckpoints: MazeCheckpoint[] = [
         feedbackText: 'The murk thickens into a false corridor and forces you back.'
       }
     ]
-  })
+  }
 ];
+
+const encodeCheckpointCommand = (decodedCommand: string): string =>
+  encodeWithKey(decodedCommand, DEFAULT_KEYWORD);
+
+const shuffle = <T>(values: T[], random: RandomSource): T[] => {
+  const copy = [...values];
+
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+
+  return copy;
+};
+
+const createCheckpoint = (spec: CheckpointSpec, random: RandomSource): MazeCheckpoint => {
+  const baseChoices = [
+    {
+      ...spec.correctChoice,
+      commandWord: spec.decodedCommand,
+      isCorrect: true
+    },
+    ...spec.wrongChoices.map((choice) => ({
+      ...choice,
+      isCorrect: false
+    }))
+  ];
+
+  const sigils = shuffle(ROUTE_SIGILS, random).slice(0, baseChoices.length);
+  const choices = shuffle(
+    baseChoices.map((choice, index) => ({
+      ...choice,
+      routeSigil: sigils[index]
+    })),
+    random
+  );
+
+  return {
+    id: spec.id,
+    title: spec.title,
+    difficulty: spec.difficulty,
+    decodedCommand: spec.decodedCommand,
+    ciphertext: encodeCheckpointCommand(spec.decodedCommand),
+    flavorText: spec.flavorText,
+    rewardLetter: spec.rewardLetter,
+    choices
+  };
+};
+
+export const buildMazeRunCheckpoints = (random: RandomSource = Math.random): MazeCheckpoint[] =>
+  checkpointSpecs.map((spec) => createCheckpoint(spec, random));
 
 export const getMazeDifficultyLabel = (difficulty: MazeDifficulty): string =>
   MAZE_DIFFICULTY_LABELS[difficulty];

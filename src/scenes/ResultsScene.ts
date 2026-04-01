@@ -8,7 +8,7 @@ import { createTextButton } from '../ui/button';
 import { fitIntoBox, getSceneLayoutMetrics } from '../ui/layout';
 import { fadeToScene, playSceneEnter } from '../ui/transitions';
 
-const SUMMARY_BASE = { width: 920, height: 560 };
+const SUMMARY_BASE = { width: 920, height: 640 };
 
 export class ResultsScene extends Phaser.Scene {
   private titleText!: Phaser.GameObjects.Text;
@@ -76,14 +76,14 @@ export class ResultsScene extends Phaser.Scene {
     this.timeText = this.add
       .text(0, -204, formatDuration(snapshot.elapsedMs), {
         fontFamily: THEME.fonts.display,
-        fontSize: '84px',
+        fontSize: '78px',
         color: THEME.css.gold
       })
       .setOrigin(0.5);
     this.performanceText = this.add
       .text(0, -140, performanceSummary, {
         fontFamily: THEME.fonts.body,
-        fontSize: '25px',
+        fontSize: '22px',
         color: THEME.css.gold,
         align: 'center',
         wordWrap: { width: 760 }
@@ -92,45 +92,46 @@ export class ResultsScene extends Phaser.Scene {
     this.statsText = this.add
       .text(
         0,
-        -42,
+        -36,
         `Penalty Time: ${formatPenalty(snapshot.penaltyMs)}   |   Wrong Turns: ${snapshot.wrongTurns}\nMini-Puzzle Attempts: ${snapshot.miniPuzzleAttempts}   |   Hints Used: ${snapshot.hintsUsed}\nMarkers Cleared: ${snapshot.currentCheckpoint}/${snapshot.totalCheckpoints}   |   Key: ${snapshot.keyWord ?? 'None'}`,
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '26px',
+          fontSize: '23px',
           color: THEME.css.parchment,
           align: 'center',
-          lineSpacing: 12
+          lineSpacing: 10
         }
       )
       .setOrigin(0.5);
     this.splitsHeaderText = this.add
-      .text(0, 72, 'Checkpoint Splits', {
+      .text(0, 82, 'Checkpoint Splits', {
         fontFamily: THEME.fonts.display,
         fontSize: '30px',
         color: THEME.css.parchment
       })
       .setOrigin(0.5);
     this.splitsText = this.add
-      .text(0, 178, splitLines || 'No marker splits were recorded.', {
+      .text(0, 194, splitLines || 'No marker splits were recorded.', {
         fontFamily: THEME.fonts.body,
-        fontSize: '20px',
+        fontSize: '18px',
         color: THEME.css.mist,
         align: 'center',
-        lineSpacing: 8,
+        lineSpacing: 7,
         wordWrap: { width: 760 }
       })
       .setOrigin(0.5);
     this.footerText = this.add
       .text(
         0,
-        254,
+        302,
         'Replay goal: shave time by solving earlier, taking fewer penalties, and carrying the decoder rhythm through the late markers.',
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '20px',
+          fontSize: '18px',
           color: THEME.css.mist,
           align: 'center',
-          wordWrap: { width: 700 }
+          wordWrap: { width: 680 },
+          lineSpacing: 5
         }
       )
       .setOrigin(0.5);
@@ -169,8 +170,8 @@ export class ResultsScene extends Phaser.Scene {
   private layoutScene(): void {
     const metrics = getSceneLayoutMetrics(this);
     const summaryWidth = Math.min(920, metrics.usableWidth);
-    const summaryHeight = Math.min(620, metrics.usableHeight - metrics.headerHeight - 70);
-    const panelY = metrics.contentTop + summaryHeight / 2 - 12;
+    const summaryHeight = Math.min(680, metrics.usableHeight - metrics.headerHeight - 54);
+    const panelY = metrics.contentTop + summaryHeight / 2 - 8;
     const scale = fitIntoBox(
       SUMMARY_BASE.width,
       SUMMARY_BASE.height,
@@ -181,7 +182,7 @@ export class ResultsScene extends Phaser.Scene {
 
     this.titleText.setPosition(metrics.width / 2, metrics.padding + 22).setOrigin(0.5);
     this.subtitleText
-      .setPosition(metrics.width / 2, metrics.padding + 88)
+      .setPosition(metrics.width / 2, metrics.padding + 84)
       .setOrigin(0.5)
       .setWordWrapWidth(Math.min(820, metrics.usableWidth - 80));
 
@@ -189,7 +190,7 @@ export class ResultsScene extends Phaser.Scene {
     this.summaryLabel.setPosition(metrics.width / 2 - summaryWidth / 2 + 18, panelY - summaryHeight / 2 + 14);
     this.summaryContent.setPosition(metrics.width / 2, panelY + 8).setScale(scale);
 
-    this.playAgainButton.setPosition(metrics.width / 2, metrics.height - metrics.padding - 40);
+    this.playAgainButton.setPosition(metrics.width / 2, metrics.height - metrics.padding - 36);
   }
 
   private getPerformanceSummary(snapshot: ReturnType<typeof runState.getSnapshot>): string {

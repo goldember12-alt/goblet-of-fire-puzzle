@@ -7,8 +7,8 @@ import { createTextButton, type TextButton } from '../ui/button';
 import { fitIntoBox, getSceneLayoutMetrics } from '../ui/layout';
 import { fadeToScene, playSceneEnter } from '../ui/transitions';
 
-const BRIEFING_BASE = { width: 690, height: 430 };
-const PRIMER_BASE = { width: 390, height: 430 };
+const BRIEFING_BASE = { width: 690, height: 408 };
+const PRIMER_BASE = { width: 390, height: 408 };
 
 export class IntroScene extends Phaser.Scene {
   private titleText!: Phaser.GameObjects.Text;
@@ -91,67 +91,67 @@ export class IntroScene extends Phaser.Scene {
     const introText = this.add
       .text(
         0,
-        -158,
-        'Solve the artifact first, then carry the recovered key into the maze and trust the decoded route signs.',
+        -142,
+        'Solve the egg first, carry its keyword into the maze, then decode each marker before the hedges can force a bad turn.',
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '22px',
+          fontSize: '20px',
           color: THEME.css.parchment,
           align: 'center',
-          wordWrap: { width: 520 },
-          lineSpacing: 8
+          wordWrap: { width: 530 },
+          lineSpacing: 6
         }
       )
       .setOrigin(0.5);
 
     const steps = [
       {
-        y: -36,
+        y: -62,
         step: '1',
-        title: 'Unlock the Egg',
+        title: 'Solve the Egg',
         body: 'Arrange the five rune fragments until every omen card agrees and the keyword is revealed.'
       },
       {
-        y: 86,
+        y: 42,
         step: '2',
-        title: 'Read the Marker',
-        body: 'Repeat the keyword under the ciphertext, shift backward by each shown amount, and uncover the route word.'
+        title: 'Decode the Marker',
+        body: 'Repeat the keyword under the ciphertext, move backward by each shown amount, and reveal the route command.'
       },
       {
-        y: 208,
+        y: 146,
         step: '3',
-        title: 'Choose Fast',
-        body: 'Pick the matching route. Wrong turns and hints cost time, so cleaner runs beat merely correct ones.'
+        title: 'Choose the Route',
+        body: 'Confirm the decoded word, then take the matching branch before wrong turns and hint penalties erode your time.'
       }
     ];
 
     steps.forEach((step) => {
       const badge = this.add
-        .circle(-270, step.y, 32, THEME.colors.moss, 1)
+        .circle(-266, step.y + 10, 28, THEME.colors.moss, 1)
         .setStrokeStyle(2, THEME.colors.gold, 0.45);
       const stepText = this.add
-        .text(-270, step.y, step.step, {
+        .text(-266, step.y + 10, step.step, {
           fontFamily: THEME.fonts.display,
-          fontSize: '30px',
+          fontSize: '28px',
           color: THEME.css.parchment
         })
         .setOrigin(0.5);
       const title = this.add
-        .text(-210, step.y - 24, step.title, {
+        .text(-210, step.y - 14, step.title, {
           fontFamily: THEME.fonts.display,
-          fontSize: '26px',
+          fontSize: '24px',
           color: THEME.css.gold
         })
-        .setOrigin(0, 0.5);
+        .setOrigin(0, 0);
       const body = this.add
-        .text(-210, step.y + 18, step.body, {
+        .text(-210, step.y + 16, step.body, {
           fontFamily: THEME.fonts.body,
-          fontSize: '18px',
+          fontSize: '16px',
           color: THEME.css.mist,
-          wordWrap: { width: 430 },
-          lineSpacing: 6
+          wordWrap: { width: 436 },
+          lineSpacing: 4
         })
-        .setOrigin(0, 0.5);
+        .setOrigin(0, 0);
 
       this.briefingContent.add([badge, stepText, title, body]);
     });
@@ -161,22 +161,22 @@ export class IntroScene extends Phaser.Scene {
 
   private buildPrimerContent(): void {
     const headline = this.add
-      .text(0, -162, 'First marker onboarding', {
+      .text(0, -156, 'How the first marker works', {
         fontFamily: THEME.fonts.display,
-        fontSize: '32px',
+        fontSize: '31px',
         color: THEME.css.parchment,
         align: 'center'
       })
       .setOrigin(0.5);
 
     const helperBackground = this.add
-      .rectangle(0, -30, 300, 154, THEME.colors.panelAlt, 0.96)
+      .rectangle(0, -38, 314, 176, THEME.colors.panelAlt, 0.96)
       .setStrokeStyle(2, THEME.colors.gold, 0.28);
     const helperText = this.add
       .text(
         0,
-        -34,
-        'Cipher  R C M M\nKey     T R I W\nShift   -19 -17 -8 -22\nInput   Up/Down change a letter',
+        -48,
+        'Cipher  E V N P\nKey     T R I W\nBack    19 17  8 22\nDecode  L E F T',
         {
           fontFamily: THEME.fonts.body,
           fontSize: '20px',
@@ -187,23 +187,39 @@ export class IntroScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
-    const notes = this.add
+    const exampleText = this.add
       .text(
         0,
-        120,
-        'The first checkpoint is intentionally short. Use Left and Right to move between cells, then Up and Down or the mouse to change letters.',
+        46,
+        'A = 0. Example: E is 4 and T is 19, so move backward 19 steps from E to wrap around to L.',
         {
           fontFamily: THEME.fonts.body,
-          fontSize: '18px',
-          color: THEME.css.mist,
+          fontSize: '16px',
+          color: THEME.css.gold,
           align: 'center',
-          wordWrap: { width: 300 },
-          lineSpacing: 6
+          wordWrap: { width: 282 },
+          lineSpacing: 4
         }
       )
       .setOrigin(0.5);
 
-    this.primerContent.add([headline, helperBackground, helperText, notes]);
+    const notes = this.add
+      .text(
+        0,
+        144,
+        'Repeat the keyword beneath the clue, fill the decoder row, press Confirm Decode, then choose the branch on that side of the maze.',
+        {
+          fontFamily: THEME.fonts.body,
+          fontSize: '17px',
+          color: THEME.css.mist,
+          align: 'center',
+          wordWrap: { width: 298 },
+          lineSpacing: 5
+        }
+      )
+      .setOrigin(0.5);
+
+    this.primerContent.add([headline, helperBackground, helperText, exampleText, notes]);
   }
 
   private layoutScene(): void {
@@ -241,11 +257,11 @@ export class IntroScene extends Phaser.Scene {
 
       this.briefingPanel.setPosition(metrics.width / 2, firstPanelY).setSize(leftWidth, panelHeight);
       this.briefingLabel.setPosition(metrics.width / 2 - leftWidth / 2 + 18, firstPanelY - panelHeight / 2 + 14);
-      this.briefingContent.setPosition(metrics.width / 2, firstPanelY + 8).setScale(briefingScale);
+      this.briefingContent.setPosition(metrics.width / 2, firstPanelY + 6).setScale(briefingScale);
 
       this.primerPanel.setPosition(metrics.width / 2, secondPanelY).setSize(rightWidth, panelHeight);
       this.primerLabel.setPosition(metrics.width / 2 - rightWidth / 2 + 18, secondPanelY - panelHeight / 2 + 14);
-      this.primerContent.setPosition(metrics.width / 2, secondPanelY + 8).setScale(primerScale);
+      this.primerContent.setPosition(metrics.width / 2, secondPanelY + 6).setScale(primerScale);
     } else {
       const leftX = metrics.padding + leftWidth / 2;
       const rightX = leftX + leftWidth / 2 + panelGap + rightWidth / 2;
@@ -266,11 +282,11 @@ export class IntroScene extends Phaser.Scene {
 
       this.briefingPanel.setPosition(leftX, topY).setSize(leftWidth, panelHeight);
       this.briefingLabel.setPosition(leftX - leftWidth / 2 + 18, topY - panelHeight / 2 + 14);
-      this.briefingContent.setPosition(leftX, topY + 8).setScale(briefingScale);
+      this.briefingContent.setPosition(leftX, topY + 6).setScale(briefingScale);
 
       this.primerPanel.setPosition(rightX, topY).setSize(rightWidth, panelHeight);
       this.primerLabel.setPosition(rightX - rightWidth / 2 + 18, topY - panelHeight / 2 + 14);
-      this.primerContent.setPosition(rightX, topY + 8).setScale(primerScale);
+      this.primerContent.setPosition(rightX, topY + 6).setScale(primerScale);
     }
 
     this.timerNoteText
