@@ -1,0 +1,98 @@
+You are working inside a fresh local repository for a browser game project.
+
+Your job is to set up the project foundation and begin implementation in a way that strictly follows the repository documentation.
+
+## First, read these files before making changes
+1. `AGENTS.md`
+2. all files in `/docs`
+3. `README.md`
+
+Treat those files as the design source of truth.
+
+## High-level project goal
+Build a browser-based puzzle-race game inspired by the structure and atmosphere of the Goblet-of-Fire-style Triwizard hedge maze:
+- players race for best completion time,
+- they must solve a mini-puzzle to unlock a cipher key,
+- they then use that key to decode maze checkpoint clues,
+- correct clue solving determines movement through the maze.
+
+## Immediate task
+Set up the project as a **Phaser + TypeScript** game and create the first vertical slice shell.
+
+## Requirements for this pass
+Create a clean initial project that includes:
+
+### 1. Project scaffolding
+- initialize a Phaser + TypeScript browser project
+- use a modern dev setup suitable for local development
+- keep the dependency footprint reasonable
+
+### 2. Core folder structure
+Set up a clean structure, likely including:
+- `src/core`
+- `src/scenes`
+- `src/systems`
+- `src/ui`
+- `src/puzzles`
+- `src/data`
+- `src/assets`
+- `progress`
+
+Adjust if needed, but keep it clean and modular.
+
+### 3. Initial runnable scene flow
+Implement a minimal but runnable flow:
+- Boot or preload scene
+- Title scene
+- Intro scene
+- Placeholder mini-puzzle scene
+- Placeholder maze scene
+- Placeholder results scene
+
+These do not need full gameplay yet, but scene transitions must work.
+
+### 4. Timer / run-state scaffolding
+Add an initial run-state or game-state system that can support:
+- elapsed time
+- penalties
+- restart/reset
+- end-of-run summary later
+
+This can be simple, but it should be intentional and extensible.
+
+### 5. Basic visual direction
+Apply lightweight placeholder styling that already points toward:
+- dark fantasy / magical tournament tone
+- readable UI
+- strong contrast
+- desktop-first usability
+
+Do not spend too much time on polish yet.
+
+### 6. Progress tracking
+Create a `progress/current-stage.md` file summarizing:
+- what was implemented
+- what files matter most
+- what the next recommended implementation step is
+
+## Constraints
+- do not overengineer
+- do not build the full game yet
+- do not create giant monolithic files if avoidable
+- do not ignore the documentation
+- keep the project runnable
+- prefer clarity and modularity over cleverness
+
+## Output expectation
+When finished:
+- the project should run locally
+- the initial scene flow should be testable
+- the repo should be in a good state for the next Codex prompt
+
+## After implementation
+Summarize:
+1. what you changed,
+2. how to run the project locally,
+3. what you recommend building next.
+
+If setup decisions are required and the docs do not specify them, make reasonable choices and document them briefly in `progress/current-stage.md`.
