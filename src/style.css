@@ -28,6 +28,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html,
 body,
 #app {
@@ -137,6 +141,8 @@ body::before {
 .overlay-slot--side {
   grid-area: side;
   align-self: stretch;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .overlay-slot--footer {
@@ -418,6 +424,44 @@ body::before {
 .mini-sidebar,
 .maze-sidebar {
   align-self: stretch;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.mini-sidebar {
+  gap: 10px;
+  padding: 18px;
+}
+
+.mini-sidebar > .ui-panel__title {
+  font-size: clamp(1.55rem, 1.9vw, 2.2rem);
+}
+
+.mini-sidebar > .ui-panel__description {
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+.mini-sidebar .ui-panel {
+  gap: 8px;
+  padding: 13px 15px;
+  border-radius: 18px;
+}
+
+.mini-focus-panel .ui-panel__description,
+.mini-omen-panel .ui-panel__description {
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.mini-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mini-actions .ui-button {
+  min-height: 50px;
+  padding: 10px 14px;
+  font-size: 0.98rem;
 }
 
 .status-text,
@@ -426,6 +470,57 @@ body::before {
   font-size: 1rem;
   line-height: 1.6;
   color: var(--parchment);
+}
+
+.status-panel {
+  position: relative;
+  padding-top: 26px;
+}
+
+.feedback-panel {
+  position: relative;
+  padding-top: 26px;
+}
+
+.status-panel__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--mist);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.status-panel__close:hover,
+.status-panel__close:focus-visible,
+.feedback-panel__close:hover,
+.feedback-panel__close:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--parchment);
+  outline: none;
+}
+
+.feedback-panel__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--mist);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .key-display {
@@ -526,12 +621,58 @@ body::before {
   grid-column: 1 / -1;
 }
 
-.route-choice__sigil {
-  display: block;
+.route-choice__glyph {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
   margin-bottom: 6px;
-  color: var(--gold);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(212, 177, 90, 0.28);
+  color: var(--parchment);
   font-family: var(--font-display);
   font-size: 1.2rem;
+  line-height: 1;
+}
+
+.route-choice__glyph--ember {
+  color: #f2c36f;
+}
+
+.route-choice__glyph--moon {
+  color: #d8e0cb;
+}
+
+.route-choice__glyph--mist {
+  color: #c7d9d1;
+}
+
+.route-choice__glyph--crown {
+  color: var(--gold);
+}
+
+.route-choice__glyph--thorn {
+  color: #dcb8a2;
+}
+
+.route-choice__sigil {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--gold);
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.route-choice__branch {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--mist);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .route-choice__label {
@@ -587,15 +728,16 @@ body::before {
 
 .rule-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .rule-card {
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--mist);
+  line-height: 1.45;
 }
 
 .rule-card--success {
@@ -620,6 +762,22 @@ body::before {
 .scene-intro .overlay-slot--main,
 .scene-results .overlay-slot--main {
   width: min(1080px, 100%);
+}
+
+.scene-results .overlay-slot--main {
+  align-self: stretch;
+  justify-self: center;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.scene-results .overlay-slot--footer {
+  display: none;
+}
+
+.results-shell {
+  max-height: 100%;
+  overflow: auto;
 }
 
 @media (max-width: 1180px) {
@@ -673,6 +831,10 @@ body::before {
 
   .route-grid,
   .ui-button-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mini-actions {
     grid-template-columns: minmax(0, 1fr);
   }
 }

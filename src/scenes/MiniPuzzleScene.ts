@@ -12,7 +12,7 @@ import {
   type Arrangement,
   type RuleEvaluation
 } from '../puzzles/runeSequenceLogic';
-import { runeSequencePuzzle } from '../puzzles/runeSequencePuzzle';
+import { runeSequencePuzzle, type RuneFragment } from '../puzzles/runeSequencePuzzle';
 import { runState } from '../systems/RunState';
 import { drawSceneBackdrop } from '../ui/backdrop';
 import {
@@ -42,7 +42,7 @@ type SlotView = {
 
 type StatusTone = 'neutral' | 'success' | 'danger' | 'warning';
 
-const WORLD_BASE = { width: 760, height: 620 };
+const WORLD_BASE = { width: 800, height: 700 };
 
 export class MiniPuzzleScene extends Phaser.Scene {
   private readonly puzzle = runeSequencePuzzle;
@@ -55,12 +55,13 @@ export class MiniPuzzleScene extends Phaser.Scene {
   private worldContainer!: Phaser.GameObjects.Container;
   private worldGlow!: Phaser.GameObjects.Ellipse;
   private titleText!: Phaser.GameObjects.Text;
+  private instructionText!: Phaser.GameObjects.Text;
   private selectedFragmentId: string | null = null;
   private lastEvaluations: RuleEvaluation[] | null = null;
   private solved = false;
-  private omenCardsOpen = false;
   private statusTone: StatusTone = 'neutral';
   private statusMessage = 'Arrange the runes, then test the sequence against the omen cards.';
+  private statusDismissed = false;
   private timerValue?: HTMLDivElement;
   private attemptsValue?: HTMLDivElement;
   private hintsValue?: HTMLDivElement;
@@ -68,9 +69,10 @@ export class MiniPuzzleScene extends Phaser.Scene {
   private keyDisplayValue?: HTMLDivElement;
   private selectedInfo?: HTMLParagraphElement;
   private summaryInfo?: HTMLParagraphElement;
+  private ruleList?: HTMLDivElement;
   private footerPanel?: HTMLElement;
   private footerText?: HTMLParagraphElement;
-  private omenButton?: HTMLButtonElement;
+  private footerCloseButton?: HTMLButtonElement;
   private hintButton?: HTMLButtonElement;
   private testButton?: HTMLButtonElement;
   private resetButton?: HTMLButtonElement;
@@ -135,79 +137,84 @@ export class MiniPuzzleScene extends Phaser.Scene {
     this.worldContainer = this.add.container(0, 0);
 
     this.titleText = this.add
-      .text(0, -258, this.puzzle.artifactName, {
+      .text(0, -302, this.puzzle.artifactName, {
         fontFamily: THEME.fonts.display,
-        fontSize: '38px',
+        fontSize: '40px',
         color: THEME.css.gold
       })
       .setOrigin(0.5);
 
+    this.instructionText = this.add
+      .text(0, -228, 'Select a rune fragment, then place it on a pedestal below the egg.', {
+        fontFamily: THEME.fonts.body,
+        fontSize: '20px',
+        color: THEME.css.mist,
+        align: 'center',
+        wordWrap: { width: 560 },
+        lineSpacing: 5
+      })
+      .setOrigin(0.5);
+
     this.worldGlow = this.add
-      .ellipse(0, -54, 200, 220, THEME.colors.gold, 0.12)
+      .ellipse(0, -40, 228, 250, THEME.colors.gold, 0.12)
       .setBlendMode(Phaser.BlendModes.SCREEN);
 
     const outerEgg = this.add
-      .ellipse(0, -10, 286, 308, THEME.colors.panelAlt, 0.96)
+      .ellipse(0, -8, 302, 326, THEME.colors.panelAlt, 0.96)
       .setStrokeStyle(4, THEME.colors.gold, 0.4);
     const innerEgg = this.add
-      .ellipse(0, -10, 216, 240, THEME.colors.midnight, 0.94)
+      .ellipse(0, -8, 228, 252, THEME.colors.midnight, 0.94)
       .setStrokeStyle(2, THEME.colors.gold, 0.22);
     const lowerGlyph = this.add
-      .ellipse(0, 38, 96, 118, THEME.colors.parchment, 0.08)
+      .ellipse(0, 44, 108, 126, THEME.colors.parchment, 0.08)
       .setStrokeStyle(2, THEME.colors.gold, 0.18);
 
-    this.worldContainer.add([this.titleText, this.worldGlow, outerEgg, innerEgg, lowerGlyph]);
+    this.worldContainer.add([this.titleText, this.instructionText, this.worldGlow, outerEgg, innerEgg, lowerGlyph]);
 
-    const positions = [
-      { x: -176, y: -78 },
-      { x: 176, y: -78 },
-      { x: -248, y: 42 },
-      { x: 248, y: 42 },
-      { x: 0, y: 164 }
-    ];
+    const positions = Phaser.Utils.Array.Shuffle([
+      { x: -196, y: -112 },
+      { x: 196, y: -112 },
+      { x: -284, y: 42 },
+      { x: 284, y: 42 },
+      { x: 0, y: 206 }
+    ]);
 
     this.puzzle.fragments.forEach((fragment, index) => {
       const position = positions[index];
       const background = this.add
-        .rectangle(0, 0, 134, 86, THEME.colors.panelAlt, 0.98)
+        .rectangle(0, 0, 146, 94, THEME.colors.panelAlt, 0.98)
         .setStrokeStyle(2, THEME.colors.gold, 0.35);
       const iconDisk = this.add
-        .circle(0, -20, 18, THEME.colors.moss, 1)
+        .circle(0, -22, 20, THEME.colors.moss, 1)
         .setStrokeStyle(2, THEME.colors.gold, 0.42);
-      const iconText = this.add
-        .text(0, -20, fragment.icon, {
-          fontFamily: THEME.fonts.display,
-          fontSize: '26px',
-          color: THEME.css.parchment
-        })
-        .setOrigin(0.5);
+      const iconGlyph = this.createRuneGlyph(fragment, 0, -22);
       const labelText = this.add
         .text(0, 12, fragment.label.replace(' Rune', ''), {
           fontFamily: THEME.fonts.body,
-          fontSize: '19px',
+          fontSize: '20px',
           color: THEME.css.parchment,
           align: 'center',
-          wordWrap: { width: 106 }
+          wordWrap: { width: 114 }
         })
         .setOrigin(0.5);
       const sigilText = this.add
-        .text(0, 34, fragment.sigil, {
+        .text(0, 36, fragment.sigil, {
           fontFamily: THEME.fonts.body,
           fontSize: '16px',
           color: THEME.css.gold
         })
         .setOrigin(0.5);
-      const hitZone = this.add.rectangle(0, 0, 134, 86, 0xffffff, 0.001);
+      const hitZone = this.add.rectangle(0, 0, 146, 94, 0xffffff, 0.001);
       const container = this.add.container(position.x, position.y, [
         background,
         iconDisk,
-        iconText,
+        iconGlyph,
         labelText,
         sigilText,
         hitZone
       ]);
 
-      container.setSize(134, 86);
+      container.setSize(146, 94);
       hitZone.setInteractive({ useHandCursor: true });
       hitZone.on('pointerdown', () => this.selectFragment(fragment.id));
       this.worldContainer.add(container);
@@ -220,30 +227,30 @@ export class MiniPuzzleScene extends Phaser.Scene {
       });
     });
 
-    const startX = -224;
+    const startX = -248;
 
     for (let index = 0; index < this.puzzle.solutionOrder.length; index += 1) {
-      const x = startX + index * 112;
+      const x = startX + index * 124;
       const pedestalLabel = this.add
-        .text(x, 232, `Ped. ${index + 1}`, {
+        .text(x, 266, `Ped. ${index + 1}`, {
           fontFamily: THEME.fonts.body,
-          fontSize: '15px',
+          fontSize: '16px',
           color: THEME.css.mist
         })
         .setOrigin(0.5);
       const background = this.add
-        .rectangle(x, 270, 90, 68, THEME.colors.panel, 0.94)
+        .rectangle(x, 320, 98, 76, THEME.colors.panel, 0.94)
         .setStrokeStyle(2, THEME.colors.gold, 0.28);
       const fragmentText = this.add
-        .text(x, 264, '---', {
+        .text(x, 312, '---', {
           fontFamily: THEME.fonts.display,
-          fontSize: '24px',
+          fontSize: '26px',
           color: THEME.css.parchment,
           align: 'center'
         })
         .setOrigin(0.5);
       const lockText = this.add
-        .text(x, 290, '', {
+        .text(x, 342, '', {
           fontFamily: THEME.fonts.body,
           fontSize: '14px',
           color: THEME.css.gold
@@ -283,21 +290,12 @@ export class MiniPuzzleScene extends Phaser.Scene {
 
     this.selectedInfo = el('p', 'ui-panel__description');
     this.summaryInfo = el('p', 'ui-panel__description');
+    this.ruleList = el('div', 'rule-list');
 
     const keyLabel = el('div', 'key-display__label', 'Cipher Key');
     this.keyDisplayValue = el('div', 'key-display__value', 'Locked');
     const keyDisplay = el('div', 'key-display');
     keyDisplay.append(keyLabel, this.keyDisplayValue);
-
-    this.omenButton = createButton({
-      label: 'View Omen Cards',
-      tone: 'secondary',
-      onClick: () => {
-        this.omenCardsOpen = !this.omenCardsOpen;
-        this.renderOmenCardsModal();
-        this.refreshOverlay();
-      }
-    });
 
     this.hintButton = createButton({
       label: 'Take Hint',
@@ -322,6 +320,27 @@ export class MiniPuzzleScene extends Phaser.Scene {
       onClick: () => fadeToScene(this, SCENE_KEYS.MAZE)
     });
 
+    const focusPanel = createPanel(
+      { className: 'mini-focus-panel', title: 'Current Focus' },
+      this.selectedInfo,
+      this.summaryInfo
+    );
+
+    const omenPanel = createPanel(
+      {
+        className: 'mini-omen-panel',
+        title: 'Omen Cards',
+        description: 'These rule cards are the logic clues for the egg. Their states update after each test.'
+      },
+      this.ruleList
+    );
+
+    const utilityRow = createButtonRow(this.hintButton, this.resetButton);
+    utilityRow.classList.add('mini-actions');
+
+    const primaryRow = createButtonRow(this.testButton, this.enterMazeButton);
+    primaryRow.classList.add('mini-actions');
+
     const sidePanel = createPanel(
       {
         className: 'mini-sidebar',
@@ -331,19 +350,22 @@ export class MiniPuzzleScene extends Phaser.Scene {
       },
       createTutorialBox('Artifact Controls', this.puzzle.interactionHint),
       keyDisplay,
-      createPanel(
-        { title: 'Current Focus' },
-        this.selectedInfo,
-        this.summaryInfo
-      ),
-      createButtonRow(this.omenButton, this.hintButton),
-      createButtonRow(this.resetButton, this.testButton),
-      createButtonRow(this.enterMazeButton)
+      focusPanel,
+      omenPanel,
+      utilityRow,
+      primaryRow
     );
 
     this.footerPanel = createPanel({ className: 'status-panel' });
+    this.footerCloseButton = el('button', 'status-panel__close', 'x') as HTMLButtonElement;
+    this.footerCloseButton.type = 'button';
+    this.footerCloseButton.setAttribute('aria-label', 'Close status message');
+    this.footerCloseButton.addEventListener('click', () => {
+      this.statusDismissed = true;
+      this.refreshOverlay();
+    });
     this.footerText = el('p', 'status-text');
-    this.footerPanel.append(this.footerText);
+    this.footerPanel.append(this.footerCloseButton, this.footerText);
 
     this.overlay.side.append(sidePanel);
     this.overlay.footer.append(this.footerPanel);
@@ -351,8 +373,11 @@ export class MiniPuzzleScene extends Phaser.Scene {
 
   private layoutScene(): void {
     const metrics = getWorldFrame(this, { reserveSidebar: true });
+    const topHudReserve = 104;
+    const bottomReserve = 20;
+    const availableHeight = Math.max(520, metrics.contentHeight - topHudReserve - bottomReserve);
     const frameWidth = Math.min(metrics.contentWidth, 900);
-    const frameHeight = Math.min(metrics.contentHeight, 760);
+    const frameHeight = Math.min(availableHeight, 780);
     const worldScale = fitIntoBox(
       WORLD_BASE.width,
       WORLD_BASE.height,
@@ -361,8 +386,11 @@ export class MiniPuzzleScene extends Phaser.Scene {
       1.12
     );
 
-    this.worldFrame.setPosition(metrics.centerX, metrics.centerY).setSize(frameWidth, frameHeight);
-    this.worldContainer.setPosition(metrics.centerX, metrics.centerY + 8).setScale(worldScale);
+    const frameTop = metrics.contentTop + topHudReserve;
+    const frameCenterY = frameTop + frameHeight / 2;
+
+    this.worldFrame.setPosition(metrics.centerX, frameCenterY).setSize(frameWidth, frameHeight);
+    this.worldContainer.setPosition(metrics.centerX, frameCenterY + 12).setScale(worldScale);
   }
 
   private refreshHud(): void {
@@ -408,11 +436,8 @@ export class MiniPuzzleScene extends Phaser.Scene {
       this.footerPanel.className = `ui-panel status-panel${
         this.statusTone !== 'neutral' ? ` ui-panel--${this.statusTone}` : ''
       }`;
+      this.footerPanel.hidden = this.statusDismissed;
       this.footerText.textContent = this.statusMessage;
-    }
-
-    if (this.omenButton) {
-      this.omenButton.textContent = this.omenCardsOpen ? 'Hide Omen Cards' : 'View Omen Cards';
     }
 
     if (this.hintButton) {
@@ -432,59 +457,21 @@ export class MiniPuzzleScene extends Phaser.Scene {
       this.enterMazeButton.textContent = this.solved ? 'Carry Key into Maze' : 'Enter the Maze';
     }
 
-    this.renderOmenCardsModal();
+    this.renderRules();
   }
 
-  private renderOmenCardsModal(): void {
-    if (!this.overlay) {
+  private renderRules(): void {
+    if (!this.ruleList) {
       return;
     }
 
-    this.overlay.modal.replaceChildren();
-
-    if (!this.omenCardsOpen) {
-      return;
-    }
-
-    const backdrop = el('div', 'modal-backdrop');
-    const panel = createPanel(
-      {
-        className: 'modal-panel',
-        eyebrow: 'Omen Cards',
-        title: this.solved ? `Cipher Key Revealed: ${this.puzzle.keyWord}` : 'Cipher Key Locked',
-        description: 'The omen cards are the source of truth for the egg sequence.'
-      }
-    );
-    const ruleList = el('div', 'rule-list');
+    this.ruleList.replaceChildren();
 
     this.puzzle.rules.forEach((rule, index) => {
       const evaluation = this.lastEvaluations?.[index];
       const toneClass = evaluation ? (evaluation.satisfied ? ' rule-card--success' : ' rule-card--danger') : '';
-      ruleList.append(el('div', `rule-card${toneClass}`, rule.description));
+      this.ruleList?.append(el('div', `rule-card${toneClass}`, rule.description));
     });
-
-    const closeButton = createButton({
-      label: 'Close',
-      tone: 'ghost',
-      onClick: () => {
-        this.omenCardsOpen = false;
-        this.renderOmenCardsModal();
-        this.refreshOverlay();
-      }
-    });
-
-    panel.append(ruleList, createButtonRow(closeButton));
-    backdrop.append(panel);
-    backdrop.addEventListener('click', (event) => {
-      if (event.target === backdrop) {
-        this.omenCardsOpen = false;
-        this.renderOmenCardsModal();
-        this.refreshOverlay();
-      }
-    });
-    panel.addEventListener('click', (event) => event.stopPropagation());
-
-    this.overlay.modal.append(backdrop);
   }
 
   private selectFragment(fragmentId: string): void {
@@ -668,10 +655,82 @@ export class MiniPuzzleScene extends Phaser.Scene {
   private setStatusMessage(message: string, tone: StatusTone): void {
     this.statusTone = tone;
     this.statusMessage = message;
+    this.statusDismissed = false;
     this.refreshOverlay();
   }
 
   private isFragmentPlaced(fragmentId: string): boolean {
     return this.arrangement.includes(fragmentId);
+  }
+
+  private createRuneGlyph(fragment: RuneFragment, x: number, y: number): Phaser.GameObjects.Graphics {
+    const glyph = this.add.graphics({ x, y });
+    glyph.lineStyle(2, THEME.colors.parchment, 1);
+    glyph.fillStyle(THEME.colors.parchment, 1);
+
+    switch (fragment.id) {
+      case 'ember':
+        glyph.beginPath();
+        glyph.moveTo(0, -11);
+        glyph.lineTo(7, -2);
+        glyph.lineTo(4, 9);
+        glyph.lineTo(0, 12);
+        glyph.lineTo(-5, 8);
+        glyph.lineTo(-8, -1);
+        glyph.closePath();
+        glyph.fillPath();
+        glyph.fillStyle(THEME.colors.gold, 0.9);
+        glyph.fillTriangle(-1, -5, 3, 1, -1, 6);
+        break;
+      case 'moon':
+        glyph.fillCircle(0, 0, 9);
+        glyph.fillStyle(THEME.colors.moss, 1);
+        glyph.fillCircle(4, -2, 8);
+        glyph.fillStyle(THEME.colors.parchment, 1);
+        glyph.fillCircle(-5, -7, 1.4);
+        break;
+      case 'mist':
+        [-5, 0, 5].forEach((offsetY) => {
+          glyph.strokePoints(
+            [
+              new Phaser.Geom.Point(-9, offsetY),
+              new Phaser.Geom.Point(-4, offsetY - 4),
+              new Phaser.Geom.Point(0, offsetY),
+              new Phaser.Geom.Point(5, offsetY + 4),
+              new Phaser.Geom.Point(9, offsetY)
+            ],
+            false,
+            false
+          );
+        });
+        break;
+      case 'crown':
+        glyph.beginPath();
+        glyph.moveTo(-10, 7);
+        glyph.lineTo(-10, 2);
+        glyph.lineTo(-5, -6);
+        glyph.lineTo(0, 1);
+        glyph.lineTo(5, -8);
+        glyph.lineTo(10, 2);
+        glyph.lineTo(10, 7);
+        glyph.closePath();
+        glyph.strokePath();
+        glyph.lineStyle(2, THEME.colors.gold, 1);
+        glyph.strokeLineShape(new Phaser.Geom.Line(-10, 7, 10, 7));
+        break;
+      case 'thorn':
+        glyph.lineStyle(2, THEME.colors.parchment, 1);
+        glyph.strokeLineShape(new Phaser.Geom.Line(-8, 9, 8, -9));
+        glyph.strokeLineShape(new Phaser.Geom.Line(-6, -5, -1, -8));
+        glyph.strokeLineShape(new Phaser.Geom.Line(-1, 0, 4, -3));
+        glyph.strokeLineShape(new Phaser.Geom.Line(2, 5, 7, 2));
+        glyph.strokeLineShape(new Phaser.Geom.Line(-3, 4, -8, 1));
+        break;
+      default:
+        glyph.fillCircle(0, 0, 6);
+        break;
+    }
+
+    return glyph;
   }
 }

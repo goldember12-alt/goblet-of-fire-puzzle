@@ -9,7 +9,7 @@ import { encodeWithKey } from '../puzzles/mazeCipher';
 export type RouteSigil = {
   id: string;
   title: string;
-  icon: string;
+  glyph: string;
 };
 
 export type MazeChoice = {
@@ -55,12 +55,11 @@ type CheckpointSpec = {
 type RandomSource = () => number;
 
 const ROUTE_SIGILS: RouteSigil[] = [
-  { id: 'thorn-knot', title: 'Thorn Knot', icon: 'X' },
-  { id: 'moon-arc', title: 'Moon Arc', icon: 'O' },
-  { id: 'ember-spark', title: 'Ember Spark', icon: '*' },
-  { id: 'mist-wave', title: 'Mist Wave', icon: '~' },
-  { id: 'crown-spire', title: 'Crown Spire', icon: 'A' },
-  { id: 'stone-seal', title: 'Stone Seal', icon: '#' }
+  { id: 'mist', title: 'Mist Rune', glyph: '≋' },
+  { id: 'crown', title: 'Crown Rune', glyph: '♛' },
+  { id: 'ember', title: 'Ember Rune', glyph: '✦' },
+  { id: 'thorn', title: 'Thorn Rune', glyph: '✢' },
+  { id: 'moon', title: 'Moon Rune', glyph: '☾' }
 ];
 
 const checkpointSpecs: CheckpointSpec[] = [

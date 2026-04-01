@@ -61,6 +61,23 @@ const getBranchPrompt = (commandWord: string): string => {
   }
 };
 
+const getBranchName = (commandWord: string): string => {
+  switch (commandWord) {
+    case 'LEFT':
+    case 'WEST':
+      return 'Left Branch';
+    case 'RIGHT':
+    case 'EAST':
+      return 'Right Branch';
+    case 'SOUTH':
+      return 'Lower Branch';
+    case 'FORWARD':
+    case 'NORTH':
+    default:
+      return 'Upper Branch';
+  }
+};
+
 export class MazeScene extends Phaser.Scene {
   private overlay?: OverlayViewHandle;
   private checkpoints: MazeCheckpoint[] = [];
@@ -69,6 +86,8 @@ export class MazeScene extends Phaser.Scene {
   private worldFrame?: Phaser.GameObjects.Rectangle;
   private previewContainer?: Phaser.GameObjects.Container;
   private previewGraphics?: Phaser.GameObjects.Graphics;
+  private branchEffectGraphics?: Phaser.GameObjects.Graphics;
+  private runnerOrb?: Phaser.GameObjects.Arc;
   private previewLabels: Phaser.GameObjects.Text[] = [];
   private decodedGuess: string[] = [];
   private inputRefs: HTMLInputElement[] = [];
@@ -83,6 +102,7 @@ export class MazeScene extends Phaser.Scene {
   private routePromptRef?: HTMLParagraphElement;
   private feedbackPanel?: HTMLElement;
   private feedbackText?: HTMLParagraphElement;
+  private feedbackCloseButton?: HTMLButtonElement;
   private confirmDecodeButton?: HTMLButtonElement;
   private routeGrid?: HTMLDivElement;
   private timerValue?: HTMLDivElement;
@@ -94,6 +114,7 @@ export class MazeScene extends Phaser.Scene {
   private decodeConfirmed = false;
   private feedbackTone: FeedbackTone = 'neutral';
   private feedbackMessage = '';
+  private feedbackDismissed = false;
 
   constructor() {
     super(SCENE_KEYS.MAZE);
@@ -145,7 +166,13 @@ export class MazeScene extends Phaser.Scene {
       .setStrokeStyle(2, THEME.colors.gold, 0.22);
 
     this.previewGraphics = this.add.graphics();
-    this.previewContainer = this.add.container(0, 0, [this.previewGraphics]);
+    this.branchEffectGraphics = this.add.graphics().setAlpha(0);
+    this.runnerOrb = this.add.circle(0, 0, 12, THEME.colors.gold, 0.92).setVisible(false);
+    this.previewContainer = this.add.container(0, 0, [
+      this.previewGraphics,
+      this.branchEffectGraphics,
+      this.runnerOrb
+    ]);
   }
 
   private createOverlay(): void {
@@ -203,8 +230,15 @@ export class MazeScene extends Phaser.Scene {
     );
 
     this.feedbackPanel = createPanel({ className: 'feedback-panel' });
+    this.feedbackCloseButton = el('button', 'feedback-panel__close', 'x') as HTMLButtonElement;
+    this.feedbackCloseButton.type = 'button';
+    this.feedbackCloseButton.setAttribute('aria-label', 'Close route feedback');
+    this.feedbackCloseButton.addEventListener('click', () => {
+      this.feedbackDismissed = true;
+      this.refreshOverlay();
+    });
     this.feedbackText = el('p', 'feedback-text');
-    this.feedbackPanel.append(this.feedbackText);
+    this.feedbackPanel.append(this.feedbackCloseButton, this.feedbackText);
 
     this.overlay.side.append(sidePanel);
     this.overlay.footer.append(this.feedbackPanel);
@@ -256,12 +290,17 @@ export class MazeScene extends Phaser.Scene {
     }
 
     const metrics = getWorldFrame(this, { reserveSidebar: true });
+    const topHudReserve = 110;
+    const bottomFeedbackReserve = 118;
+    const availableHeight = Math.max(420, metrics.contentHeight - topHudReserve - bottomFeedbackReserve);
     const frameWidth = Math.min(metrics.contentWidth, 760);
-    const frameHeight = Math.min(metrics.contentHeight, 760);
+    const frameHeight = Math.min(availableHeight, 700);
     const scale = fitIntoBox(PREVIEW_BASE.width, PREVIEW_BASE.height, frameWidth - 32, frameHeight - 32, 1.16);
+    const frameTop = metrics.contentTop + topHudReserve;
+    const frameCenterY = frameTop + frameHeight / 2;
 
-    this.worldFrame.setPosition(metrics.centerX, metrics.centerY).setSize(frameWidth, frameHeight);
-    this.previewContainer.setPosition(metrics.centerX, metrics.centerY + 8).setScale(scale);
+    this.worldFrame.setPosition(metrics.centerX, frameCenterY).setSize(frameWidth, frameHeight);
+    this.previewContainer.setPosition(metrics.centerX, frameCenterY + 8).setScale(scale);
   }
 
   private refreshHud(): void {
@@ -281,8 +320,7 @@ export class MazeScene extends Phaser.Scene {
     this.interactionLocked = false;
     this.decodeConfirmed = false;
     this.decodedGuess = Array.from({ length: checkpoint.ciphertext.length }, () => '?');
-    this.feedbackTone = 'neutral';
-    this.feedbackMessage = this.getNeutralFeedbackText(checkpoint);
+    this.setFeedbackState('neutral', this.getNeutralFeedbackText(checkpoint));
     runState.setCheckpointProgress(index + 1, this.checkpoints.length);
 
     this.renderMazePreview();
@@ -335,6 +373,7 @@ export class MazeScene extends Phaser.Scene {
       this.feedbackPanel.className = `ui-panel feedback-panel${
         this.feedbackTone !== 'neutral' ? ` ui-panel--${this.feedbackTone}` : ''
       }`;
+      this.feedbackPanel.hidden = this.feedbackDismissed;
       this.feedbackText.textContent = this.feedbackMessage;
     }
 
@@ -467,7 +506,9 @@ export class MazeScene extends Phaser.Scene {
 
       button.dataset.command = choice.commandWord;
       button.replaceChildren(
-        el('span', 'route-choice__sigil', `${choice.routeSigil.icon} ${choice.routeSigil.title}`),
+        el('span', `route-choice__glyph route-choice__glyph--${choice.routeSigil.id}`, choice.routeSigil.glyph),
+        el('span', 'route-choice__sigil', choice.routeSigil.title),
+        el('span', 'route-choice__branch', getBranchName(choice.commandWord)),
         el('span', 'route-choice__label', choice.label)
       );
 
@@ -493,16 +534,20 @@ export class MazeScene extends Phaser.Scene {
     if (workingDecode !== this.currentCheckpoint.decodedCommand) {
       const penaltyMs = this.checkpointIndex === 0 ? 1500 : 2500;
       runState.addPenalty(penaltyMs);
-      this.feedbackTone = 'danger';
-      this.feedbackMessage = `The marker rejects "${workingDecode}". Penalty applied: ${formatPenalty(penaltyMs)}.`;
+      this.setFeedbackState(
+        'danger',
+        `The marker rejects "${workingDecode}". Penalty applied: ${formatPenalty(penaltyMs)}.`
+      );
       this.cameras.main.shake(110, 0.0018);
       this.refreshOverlay();
       return;
     }
 
     this.decodeConfirmed = true;
-    this.feedbackTone = 'success';
-    this.feedbackMessage = `Decoded command confirmed: ${workingDecode}. Choose the route plaque on the ${getBranchPrompt(workingDecode)}.`;
+    this.setFeedbackState(
+      'success',
+      `Decoded command confirmed: ${workingDecode}. Choose the route plaque on the ${getBranchPrompt(workingDecode)}.`
+    );
     this.tweens.add({
       targets: this.worldFrame,
       alpha: 0.88,
@@ -579,20 +624,26 @@ export class MazeScene extends Phaser.Scene {
     checkpoint.choices.forEach((choice) => {
       const endpoint = getPreviewEndpoint(choice.commandWord);
       const text = this.add
-        .text(endpoint.x, endpoint.y + (endpoint.y < hub.y ? -46 : 42), `${choice.routeSigil.icon} ${choice.label}`, {
+        .text(
+          endpoint.x,
+          endpoint.y + (endpoint.y < hub.y ? -46 : 42),
+          `${choice.routeSigil.glyph} ${choice.routeSigil.title}\n${getBranchName(choice.commandWord)}`,
+          {
           fontFamily: THEME.fonts.body,
-          fontSize: '18px',
-        color: THEME.css.mist,
-        align: 'center',
-        wordWrap: { width: 124 }
-      })
-      .setOrigin(0.5);
+            fontSize: '17px',
+            color: THEME.css.mist,
+            align: 'center',
+            wordWrap: { width: 144 },
+            lineSpacing: 4
+          }
+        )
+        .setOrigin(0.5);
       previewContainer.add(text);
       this.previewLabels.push(text);
     });
 
     const footer = this.add
-      .text(0, 196, 'Decode the marker to learn which branch actually stays open.', {
+      .text(0, 236, 'Decode the marker to learn which branch actually stays open.', {
         fontFamily: THEME.fonts.body,
         fontSize: '17px',
         color: THEME.css.mist,
@@ -621,23 +672,25 @@ export class MazeScene extends Phaser.Scene {
         );
       }
 
-      this.feedbackTone = 'success';
-      this.feedbackMessage =
+      this.setFeedbackState(
+        'success',
         this.checkpointIndex === 0
           ? `${choice.feedbackText} The maze now expects this rhythm at every marker: decode, confirm, then commit.`
-          : choice.feedbackText;
+          : choice.feedbackText
+      );
       this.cameras.main.flash(150, 212, 177, 90, false);
       this.refreshOverlay();
+      this.playBranchAnimation(choice, 'success');
 
       if (this.checkpointIndex === this.checkpoints.length - 1) {
-        runState.completeRun();
         this.time.delayedCall(520, () => {
+          runState.completeRun();
           fadeToScene(this, SCENE_KEYS.RESULTS);
         });
         return;
       }
 
-      this.time.delayedCall(480, () => {
+      this.time.delayedCall(620, () => {
         this.showCheckpoint(this.checkpointIndex + 1);
       });
       return;
@@ -647,14 +700,135 @@ export class MazeScene extends Phaser.Scene {
     this.interactionLocked = true;
     runState.recordWrongTurn();
     runState.addPenalty(penaltyMs);
-    this.feedbackTone = 'danger';
-    this.feedbackMessage = `${choice.feedbackText} Penalty applied: ${formatPenalty(penaltyMs)}.`;
+    this.setFeedbackState('danger', `${choice.feedbackText} Penalty applied: ${formatPenalty(penaltyMs)}.`);
     this.cameras.main.shake(130, 0.0025);
     this.refreshOverlay();
-    this.time.delayedCall(360, () => {
+    this.playBranchAnimation(choice, 'danger');
+    this.time.delayedCall(560, () => {
       this.interactionLocked = false;
       this.refreshOverlay();
     });
+  }
+
+  private setFeedbackState(tone: FeedbackTone, message: string): void {
+    this.feedbackTone = tone;
+    this.feedbackMessage = message;
+    this.feedbackDismissed = false;
+  }
+
+  private playBranchAnimation(choice: MazeChoice, tone: 'success' | 'danger'): void {
+    if (!this.branchEffectGraphics || !this.runnerOrb) {
+      return;
+    }
+
+    const branchGraphics = this.branchEffectGraphics;
+    const orb = this.runnerOrb;
+    const path = this.getBranchPath(choice.commandWord);
+    const endpoint = path[path.length - 1];
+    const lineColor = tone === 'success' ? THEME.colors.gold : THEME.colors.danger;
+    const orbColor = tone === 'success' ? THEME.colors.parchment : THEME.colors.danger;
+
+    this.tweens.killTweensOf(orb);
+    this.tweens.killTweensOf(branchGraphics);
+
+    branchGraphics.clear();
+    branchGraphics.lineStyle(10, lineColor, tone === 'success' ? 0.78 : 0.72);
+    branchGraphics.beginPath();
+    branchGraphics.moveTo(path[0].x, path[0].y);
+    path.slice(1).forEach((point) => {
+      branchGraphics.lineTo(point.x, point.y);
+    });
+    branchGraphics.strokePath();
+    branchGraphics.fillStyle(lineColor, tone === 'success' ? 0.24 : 0.18);
+    branchGraphics.fillCircle(endpoint.x, endpoint.y, tone === 'success' ? 30 : 26);
+    branchGraphics.setAlpha(1);
+
+    orb.setFillStyle(orbColor, 0.95);
+    orb.setPosition(path[0].x, path[0].y);
+    orb.setVisible(true);
+    orb.setScale(tone === 'success' ? 1 : 0.9);
+
+    const progress = { value: 0 };
+    this.tweens.add({
+      targets: progress,
+      value: tone === 'success' ? 1 : 0.78,
+      duration: tone === 'success' ? 360 : 260,
+      ease: tone === 'success' ? 'Sine.easeOut' : 'Quad.easeOut',
+      onUpdate: () => {
+        const point = this.interpolatePath(path, progress.value);
+        orb.setPosition(point.x, point.y);
+      },
+      onComplete: () => {
+        if (tone === 'danger') {
+          this.tweens.add({
+            targets: orb,
+            alpha: 0,
+            duration: 130,
+            yoyo: true,
+            hold: 40,
+            onComplete: () => {
+              orb.setVisible(false).setAlpha(1);
+            }
+          });
+        }
+      }
+    });
+
+    this.tweens.add({
+      targets: branchGraphics,
+      alpha: 0,
+      delay: tone === 'success' ? 260 : 180,
+      duration: tone === 'success' ? 360 : 260,
+      onComplete: () => branchGraphics.clear()
+    });
+  }
+
+  private getBranchPath(commandWord: string): Phaser.Math.Vector2[] {
+    const hub = new Phaser.Math.Vector2(0, 18);
+    const endpoint = getPreviewEndpoint(commandWord);
+    const midY = commandWord === 'SOUTH' ? 92 : (hub.y + endpoint.y) / 2;
+
+    return [
+      hub,
+      new Phaser.Math.Vector2(hub.x, midY),
+      new Phaser.Math.Vector2(endpoint.x, midY),
+      endpoint
+    ];
+  }
+
+  private interpolatePath(path: Phaser.Math.Vector2[], progress: number): Phaser.Math.Vector2 {
+    const distances: number[] = [];
+    let total = 0;
+
+    for (let index = 1; index < path.length; index += 1) {
+      const distance = Phaser.Math.Distance.Between(path[index - 1].x, path[index - 1].y, path[index].x, path[index].y);
+      distances.push(distance);
+      total += distance;
+    }
+
+    if (total === 0) {
+      return path[path.length - 1];
+    }
+
+    let remaining = total * Phaser.Math.Clamp(progress, 0, 1);
+
+    for (let index = 1; index < path.length; index += 1) {
+      const segmentDistance = distances[index - 1];
+
+      if (remaining <= segmentDistance) {
+        const start = path[index - 1];
+        const end = path[index];
+        const t = segmentDistance === 0 ? 1 : remaining / segmentDistance;
+        return new Phaser.Math.Vector2(
+          Phaser.Math.Linear(start.x, end.x, t),
+          Phaser.Math.Linear(start.y, end.y, t)
+        );
+      }
+
+      remaining -= segmentDistance;
+    }
+
+    return path[path.length - 1];
   }
 
   private getWorkingText(): string {
